@@ -1,0 +1,63 @@
+[tool.poetry]
+name = "doru"
+version = "0.1.0"
+description = "Bot to accumulate crypto on centralized exchanges using dollar-cost averaging."
+authors = ["Masaharu Shimizu <masaharu.shimizu08@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+mypy = "^0.991"
+black = "^22.10.0"
+flake9 = "^3.8.3"
+autoflake = "^1.7.8"
+isort = "^5.10.1"
+
+[tool.isort]
+profile = "black"
+skip_glob = [
+    ".venv",
+]
+
+[tool.black]
+line-length = 119
+exclude = '''
+(
+    /(
+        .git
+        |.venv
+        |.vscode
+        |.mypy_cache
+        |README.md
+        |__pycache__
+    )/
+)
+'''
+
+[tool.flake8]
+max-line-length = 119
+exclude = ".venv"
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = false
+ignore_errors = false
+ignore_missing_imports = true
+implicit_reexport = false
+no_implicit_optional = true
+show_error_codes = true
+strict_equality = true
+strict_optional = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
