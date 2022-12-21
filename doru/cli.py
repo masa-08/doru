@@ -58,19 +58,10 @@ def cli():
 )
 def add(exchange: Exchange, interval: Interval, amount: int, pair: Pair):
     manager = create_daemon_manager()
-    task_id = "hoge"  # XXX
     try:
-        manager.add_task(
-            {
-                "id": task_id,
-                "exchange": exchange,
-                "interval": interval,
-                "amount": amount,
-                "pair": pair,
-                "status": "Stopped",
-            }
-        )
-        manager.start_task(task_id)  # XXX
+        task = manager.add_task(exchange, interval, amount, pair)
+        # TODO: startするかどうかはoptionで指定できるようにする
+        manager.start_task(task.id)  # XXX
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
 
@@ -148,7 +139,8 @@ def list():
         tasks = manager.get_tasks()
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
-    click.echo(tabulate(tasks, headers="keys", tablefmt="simple"))
+    # TODO: sort
+    click.echo(tabulate([t.dict() for t in tasks], headers="keys", tablefmt="simple"))
 
 
 @cli.group(help="Add or remove credentials for the exchanges.")
@@ -188,7 +180,7 @@ def cred():
 def cred_add(exchange, key, secret):
     manager = create_daemon_manager()
     try:
-        manager.add_cred({"exchange": exchange, "key": key, "secret": secret})
+        manager.add_cred(exchange, key, secret)
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
 

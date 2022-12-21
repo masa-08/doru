@@ -3,32 +3,32 @@ from typing import List
 import pytest
 from click.testing import CliRunner
 
+from doru.api.schema import Task
 from doru.cli import cli
-from doru.types import Task
 
 TEST_DATA: List[Task] = [
-    {
-        "id": "1",
-        "exchange": "bitbank",
-        "interval": "1day",
-        "amount": 10000,
-        "pair": "BTC_JPY",
-        "status": "Stopped",
-    },
-    {
-        "id": "2",
-        "interval": "1week",
-        "exchange": "bitflyer",
-        "amount": 20000,
-        "pair": "ETH_JPY",
-        "status": "Running",
-    },
+    Task(
+        id="1",
+        exchange="bitbank",
+        interval="1day",
+        amount=10000,
+        pair="BTC_JPY",
+        status="Stopped",
+    ),
+    Task(
+        id="2",
+        interval="1week",
+        exchange="bitflyer",
+        amount=20000,
+        pair="ETH_JPY",
+        status="Running",
+    ),
 ]
 
 
 @pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "1", "BTC_JPY"]])
 def test_add_with_valid_amount_succeed(exchange, interval, amount, pair, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.add_task", return_value=None)
+    mocker.patch("doru.daemon_manager.DaemonManager.add_task", return_value=TEST_DATA[1])
     mocker.patch("doru.daemon_manager.DaemonManager.start_task", return_value=None)
     result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
     assert result.exit_code == 0
@@ -93,6 +93,7 @@ def test_start_with_valid_id_succeed(id, mocker):
 
 
 def test_start_all_tasks_succeed(mocker):
+    mocker.patch("doru.daemon_manager.DaemonManager.get_tasks", return_value=TEST_DATA)
     mocker.patch("doru.daemon_manager.DaemonManager.start_task", return_value=None)
     result = CliRunner().invoke(cli, args=["start", "--all"])
     assert result.exit_code == 0
@@ -118,6 +119,7 @@ def test_stop_with_valid_id_succeed(id, mocker):
 
 
 def test_stop_all_tasks_succeed(mocker):
+    mocker.patch("doru.daemon_manager.DaemonManager.get_tasks", return_value=TEST_DATA)
     mocker.patch("doru.daemon_manager.DaemonManager.stop_task", return_value=None)
     result = CliRunner().invoke(cli, args=["stop", "--all"])
     assert result.exit_code == 0
@@ -151,24 +153,25 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
         and "interval" in header
     )
 
+    # TODO: 出力順を変更する関数を追加後、テストも変更する
     words = lines[2].split()
     assert (
-        words[0] == TEST_DATA[0]["id"]
-        and words[1] == TEST_DATA[0]["exchange"]
-        and words[2] == TEST_DATA[0]["interval"]
-        and words[3] == str(TEST_DATA[0]["amount"])
-        and words[4] == TEST_DATA[0]["pair"]
-        and words[5] == TEST_DATA[0]["status"]
+        words[4] == TEST_DATA[0].id
+        and words[3] == TEST_DATA[0].exchange
+        and words[2] == TEST_DATA[0].interval
+        and words[1] == str(TEST_DATA[0].amount)
+        and words[0] == TEST_DATA[0].pair
+        and words[5] == TEST_DATA[0].status
     )
 
     words = lines[3].split()
     assert (
-        words[0] == TEST_DATA[1]["id"]
-        and words[1] == TEST_DATA[1]["exchange"]
-        and words[2] == TEST_DATA[1]["interval"]
-        and words[3] == str(TEST_DATA[1]["amount"])
-        and words[4] == TEST_DATA[1]["pair"]
-        and words[5] == TEST_DATA[1]["status"]
+        words[4] == TEST_DATA[1].id
+        and words[3] == TEST_DATA[1].exchange
+        and words[2] == TEST_DATA[1].interval
+        and words[1] == str(TEST_DATA[1].amount)
+        and words[0] == TEST_DATA[1].pair
+        and words[5] == TEST_DATA[1].status
     )
 
 
