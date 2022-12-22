@@ -10,6 +10,7 @@ from doru.types import Exchange, Interval, Pair
 ENABLE_EXCHANGES = get_args(Exchange)
 ENABLE_INTERVALS = get_args(Interval)
 ENABLE_PAIRS = get_args(Pair)
+HEADER = ["id", "pair", "amount", "interval", "exchange", "status"]
 
 
 def validate_cred(ctx, param, value):
@@ -139,8 +140,13 @@ def list():
         tasks = manager.get_tasks()
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
-    # TODO: sort
-    click.echo(tabulate([t.dict() for t in tasks], headers="keys", tablefmt="simple"))
+    click.echo(
+        tabulate(
+            [(t.id, t.pair, t.amount, t.interval, t.exchange, t.status) for t in tasks],
+            headers=HEADER,
+            tablefmt="simple",
+        )
+    )
 
 
 @cli.group(help="Add or remove credentials for the exchanges.")
