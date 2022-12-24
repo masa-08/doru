@@ -5,6 +5,7 @@ from click.testing import CliRunner
 
 from doru.api.schema import Task
 from doru.cli import cli
+from doru.daemon_manager import DaemonManager
 
 TEST_DATA: List[Task] = [
     Task(
@@ -30,8 +31,21 @@ TEST_DATA: List[Task] = [
 def test_add_with_valid_amount_succeed(exchange, interval, amount, pair, mocker):
     mocker.patch("doru.daemon_manager.DaemonManager.add_task", return_value=TEST_DATA[1])
     mocker.patch("doru.daemon_manager.DaemonManager.start_task", return_value=None)
+    spy = mocker.spy(DaemonManager, "start_task")
     result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
     assert result.exit_code == 0
+    assert spy.call_count == 1
+
+
+@pytest.mark.parametrize("exchange, interval, amount, pair, start", [["bitbank", "1day", "1", "BTC_JPY", "False"]])
+def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, interval, amount, pair, start, mocker):
+    mocker.patch("doru.daemon_manager.DaemonManager.add_task", return_value=TEST_DATA[1])
+    spy = mocker.spy(DaemonManager, "start_task")
+    result = CliRunner().invoke(
+        cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair, "-s", start]
+    )
+    assert result.exit_code == 0
+    assert spy.call_count == 0
 
 
 @pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "1", "BTC_JPY"]])
@@ -143,34 +157,33 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
     assert result.exit_code == 0
 
     lines = result.stdout.split("\n")
-    header = lines[0]
+    header = lines[0].split()
     assert (
-        "id" in header
-        and "pair" in header
-        and "amount" in header
-        and "exchange" in header
-        and "status" in header
-        and "interval" in header
+        header[0] == "id"
+        and header[1] == "pair"
+        and header[2] == "amount"
+        and header[3] == "interval"
+        and header[4] == "exchange"
+        and header[5] == "status"
     )
 
-    # TODO: 出力順を変更する関数を追加後、テストも変更する
     words = lines[2].split()
     assert (
-        words[4] == TEST_DATA[0].id
-        and words[3] == TEST_DATA[0].exchange
-        and words[2] == TEST_DATA[0].interval
-        and words[1] == str(TEST_DATA[0].amount)
-        and words[0] == TEST_DATA[0].pair
+        words[0] == TEST_DATA[0].id
+        and words[1] == TEST_DATA[0].pair
+        and words[2] == str(TEST_DATA[0].amount)
+        and words[3] == TEST_DATA[0].interval
+        and words[4] == TEST_DATA[0].exchange
         and words[5] == TEST_DATA[0].status
     )
 
     words = lines[3].split()
     assert (
-        words[4] == TEST_DATA[1].id
-        and words[3] == TEST_DATA[1].exchange
-        and words[2] == TEST_DATA[1].interval
-        and words[1] == str(TEST_DATA[1].amount)
-        and words[0] == TEST_DATA[1].pair
+        words[0] == TEST_DATA[1].id
+        and words[1] == TEST_DATA[1].pair
+        and words[2] == str(TEST_DATA[1].amount)
+        and words[3] == TEST_DATA[1].interval
+        and words[4] == TEST_DATA[1].exchange
         and words[5] == TEST_DATA[1].status
     )
 
@@ -179,7 +192,16 @@ def test_list_with_no_task_succeed(mocker):
     mocker.patch("doru.daemon_manager.DaemonManager.get_tasks", return_value=[])
     result = CliRunner().invoke(cli, args=["list"])
     assert result.exit_code == 0
-    assert result.stdout == "\n"
+    lines = result.stdout.split("\n")
+    header = lines[0].split()
+    assert (
+        header[0] == "id"
+        and header[1] == "pair"
+        and header[2] == "amount"
+        and header[3] == "interval"
+        and header[4] == "exchange"
+        and header[5] == "status"
+    )
 
 
 @pytest.mark.parametrize("exchange, key, secret", [["bitbank", "xxxxxxxxxx", "yyyyyyyyyy"]])
