@@ -57,12 +57,20 @@ def cli():
     prompt=True,
     help="Select the pair you want to buy.",
 )
-def add(exchange: Exchange, interval: Interval, amount: int, pair: Pair):
+@click.option(
+    "--start",
+    "-s",
+    type=click.BOOL,
+    prompt=True,
+    default=True,
+    help="Start the task after adding it.",
+)
+def add(exchange: Exchange, interval: Interval, amount: int, pair: Pair, start: bool):
     manager = create_daemon_manager()
     try:
         task = manager.add_task(exchange, interval, amount, pair)
-        # TODO: startするかどうかはoptionで指定できるようにする
-        manager.start_task(task.id)  # XXX
+        if start:
+            manager.start_task(task.id)  # XXX
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
 

@@ -5,6 +5,7 @@ from click.testing import CliRunner
 
 from doru.api.schema import Task
 from doru.cli import cli
+from doru.daemon_manager import DaemonManager
 
 TEST_DATA: List[Task] = [
     Task(
@@ -30,8 +31,21 @@ TEST_DATA: List[Task] = [
 def test_add_with_valid_amount_succeed(exchange, interval, amount, pair, mocker):
     mocker.patch("doru.daemon_manager.DaemonManager.add_task", return_value=TEST_DATA[1])
     mocker.patch("doru.daemon_manager.DaemonManager.start_task", return_value=None)
+    spy = mocker.spy(DaemonManager, "start_task")
     result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
     assert result.exit_code == 0
+    assert spy.call_count == 1
+
+
+@pytest.mark.parametrize("exchange, interval, amount, pair, start", [["bitbank", "1day", "1", "BTC_JPY", "False"]])
+def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, interval, amount, pair, start, mocker):
+    mocker.patch("doru.daemon_manager.DaemonManager.add_task", return_value=TEST_DATA[1])
+    spy = mocker.spy(DaemonManager, "start_task")
+    result = CliRunner().invoke(
+        cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair, "-s", start]
+    )
+    assert result.exit_code == 0
+    assert spy.call_count == 0
 
 
 @pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "1", "BTC_JPY"]])
