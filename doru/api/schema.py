@@ -19,7 +19,22 @@ class Task(TaskBase):
     status: Status
 
 
-class Credential(BaseModel):
-    exchange: Exchange
+class CredentialBase(BaseModel):
     key: str
     secret: str
+
+    @validator("key")
+    def empty_key_forbidden(cls, v):
+        if len(v) == 0:
+            raise ValueError("Empty key is forbidden.")
+        return v
+
+    @validator("secret")
+    def empty_secret_forbidden(cls, v):
+        if len(v) == 0:
+            raise ValueError("Empty secret is forbidden.")
+        return v
+
+
+class Credential(CredentialBase):
+    exchange: Exchange
