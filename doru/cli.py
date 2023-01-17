@@ -4,7 +4,7 @@ import click
 from tabulate import tabulate
 from typing_extensions import get_args
 
-from doru.daemon_manager import create_daemon_manager
+from doru.api.client import create_client
 from doru.types import Exchange, Interval, Pair
 
 ENABLE_EXCHANGES = get_args(Exchange)
@@ -66,7 +66,7 @@ def cli():
     help="Start the task after adding it.",
 )
 def add(exchange: Exchange, interval: Interval, amount: int, pair: Pair, start: bool):
-    manager = create_daemon_manager()
+    manager = create_client()
     try:
         task = manager.add_task(exchange, interval, amount, pair)
         if start:
@@ -78,7 +78,7 @@ def add(exchange: Exchange, interval: Interval, amount: int, pair: Pair, start: 
 @cli.command(help="Remove a task to accumulate crypto.")
 @click.argument("id", nargs=1, type=click.STRING)
 def remove(id: str):
-    manager = create_daemon_manager()
+    manager = create_client()
     try:
         manager.remove_task(id)
     except Exception as e:
@@ -99,7 +99,7 @@ def start(ids: List[str], all: str):
     if not ids and not all:
         raise click.ClickException("Task id or `--all` option must be specified.")
 
-    manager = create_daemon_manager()
+    manager = create_client()
     if all:
         try:
             manager.start_all_tasks()
@@ -127,7 +127,7 @@ def stop(ids: List[str], all: str):
     if not ids and not all:
         raise click.ClickException("Task id or `--all` option must be specified.")
 
-    manager = create_daemon_manager()
+    manager = create_client()
     if all:
         try:
             manager.stop_all_tasks()
@@ -143,7 +143,7 @@ def stop(ids: List[str], all: str):
 
 @cli.command(help="Display tasks to accumulate crypto.")
 def list():
-    manager = create_daemon_manager()
+    manager = create_client()
     try:
         tasks = manager.get_tasks()
     except Exception as e:
@@ -192,7 +192,7 @@ def cred():
     help="Enter the API secret.",
 )
 def cred_add(exchange, key, secret):
-    manager = create_daemon_manager()
+    manager = create_client()
     try:
         manager.add_cred(exchange, key, secret)
     except Exception as e:
@@ -209,7 +209,7 @@ def cred_add(exchange, key, secret):
     help="Select the exchange from which you want to remove the credential.",
 )
 def cred_remove(exchange):
-    manager = create_daemon_manager()
+    manager = create_client()
     try:
         manager.remove_cred(exchange)
     except Exception as e:

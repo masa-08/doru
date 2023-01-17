@@ -4,7 +4,7 @@ from typing import Any, Dict
 import pytest
 
 from doru.api.schema import Credential
-from doru.credential_manager import CredentialManager, create_credential_manager
+from doru.manager.credential_manager import CredentialManager, create_credential_manager
 
 TEST_DATA = {
     "bitbank": {
@@ -90,7 +90,7 @@ def test_add_credential_with_valid_credential_succeed(
 def test_add_credential_with_exception_on_writing_throw_exception(
     credential_manager: CredentialManager, cred, credentials, mocker
 ):
-    mocker.patch("doru.credential_manager.CredentialManager._write", side_effect=Exception)
+    mocker.patch("doru.manager.credential_manager.CredentialManager._write", side_effect=Exception)
     with pytest.raises(Exception):
         credential_manager.add_credential(cred)
     # add_credential change nothing
@@ -134,7 +134,7 @@ def test_remove_credential_with_invalid_key_raise_exception(
 def test_remove_credential_with_exception_on_writing_throw_exception(
     credential_manager: CredentialManager, exchange, credentials, mocker
 ):
-    mocker.patch("doru.credential_manager.CredentialManager._write", side_effect=Exception)
+    mocker.patch("doru.manager.credential_manager.CredentialManager._write", side_effect=Exception)
     with pytest.raises(Exception):
         credential_manager.remove_credential(exchange)
     # remove_credential change nothing
