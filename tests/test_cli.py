@@ -5,7 +5,7 @@ from click.testing import CliRunner
 
 from doru.api.schema import Task
 from doru.cli import cli
-from doru.daemon_manager import DaemonManager
+from doru.api.client import Client
 
 TEST_DATA: List[Task] = [
     Task(
@@ -29,9 +29,9 @@ TEST_DATA: List[Task] = [
 
 @pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "1", "BTC_JPY"]])
 def test_add_with_valid_amount_succeed(exchange, interval, amount, pair, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.add_task", return_value=TEST_DATA[1])
-    mocker.patch("doru.daemon_manager.DaemonManager.start_task", return_value=None)
-    spy = mocker.spy(DaemonManager, "start_task")
+    mocker.patch("doru.api.client.Client.add_task", return_value=TEST_DATA[1])
+    mocker.patch("doru.api.client.Client.start_task", return_value=None)
+    spy = mocker.spy(Client, "start_task")
     result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
     assert result.exit_code == 0
     assert spy.call_count == 1
@@ -39,8 +39,8 @@ def test_add_with_valid_amount_succeed(exchange, interval, amount, pair, mocker)
 
 @pytest.mark.parametrize("exchange, interval, amount, pair, start", [["bitbank", "1day", "1", "BTC_JPY", "False"]])
 def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, interval, amount, pair, start, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.add_task", return_value=TEST_DATA[1])
-    spy = mocker.spy(DaemonManager, "start_task")
+    mocker.patch("doru.api.client.Client.add_task", return_value=TEST_DATA[1])
+    spy = mocker.spy(Client, "start_task")
     result = CliRunner().invoke(
         cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair, "-s", start]
     )
@@ -50,7 +50,7 @@ def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, interval, am
 
 @pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "1", "BTC_JPY"]])
 def test_add_fail_when_task_daemon_manager_raise_exception(exchange, interval, amount, pair, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.add_task", side_effect=Exception)
+    mocker.patch("doru.api.client.Client.add_task", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
     assert result.exit_code != 0
 
@@ -87,35 +87,35 @@ def test_add_with_invalid_pair_fail(exchange, interval, amount, pair):
 
 @pytest.mark.parametrize("id", ["1"])
 def test_remove_with_valid_id_succeed(id, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.remove_task", return_value=None)
+    mocker.patch("doru.api.client.Client.remove_task", return_value=None)
     result = CliRunner().invoke(cli, args=["remove", id])
     assert result.exit_code == 0
 
 
 @pytest.mark.parametrize("id", ["9999"])
 def test_remove_with_invalid_id_fail(id, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.remove_task", side_effect=Exception)
+    mocker.patch("doru.api.client.Client.remove_task", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["remove", id])
     assert result.exit_code != 0
 
 
 @pytest.mark.parametrize("id", ["1"])
 def test_start_with_valid_id_succeed(id, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.start_task", return_value=None)
+    mocker.patch("doru.api.client.Client.start_task", return_value=None)
     result = CliRunner().invoke(cli, args=["start", id])
     assert result.exit_code == 0
 
 
 def test_start_all_tasks_succeed(mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.get_tasks", return_value=TEST_DATA)
-    mocker.patch("doru.daemon_manager.DaemonManager.start_task", return_value=None)
+    mocker.patch("doru.api.client.Client.get_tasks", return_value=TEST_DATA)
+    mocker.patch("doru.api.client.Client.start_task", return_value=None)
     result = CliRunner().invoke(cli, args=["start", "--all"])
     assert result.exit_code == 0
 
 
 @pytest.mark.parametrize("id", ["9999"])
 def test_start_with_invalid_id_fail(id, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.start_task", side_effect=Exception)
+    mocker.patch("doru.api.client.Client.start_task", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["start", id])
     assert result.exit_code != 0
 
@@ -127,21 +127,21 @@ def test_start_with_no_id_fail():
 
 @pytest.mark.parametrize("id", ["1"])
 def test_stop_with_valid_id_succeed(id, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.stop_task", return_value=None)
+    mocker.patch("doru.api.client.Client.stop_task", return_value=None)
     result = CliRunner().invoke(cli, args=["stop", id])
     assert result.exit_code == 0
 
 
 def test_stop_all_tasks_succeed(mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.get_tasks", return_value=TEST_DATA)
-    mocker.patch("doru.daemon_manager.DaemonManager.stop_task", return_value=None)
+    mocker.patch("doru.api.client.Client.get_tasks", return_value=TEST_DATA)
+    mocker.patch("doru.api.client.Client.stop_task", return_value=None)
     result = CliRunner().invoke(cli, args=["stop", "--all"])
     assert result.exit_code == 0
 
 
 @pytest.mark.parametrize("id", ["9999"])
 def test_stop_with_invalid_id_fail(id, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.stop_task", side_effect=Exception)
+    mocker.patch("doru.api.client.Client.stop_task", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["stop", id])
     assert result.exit_code != 0
 
@@ -152,7 +152,7 @@ def test_stop_with_no_id_fail():
 
 
 def test_list_with_one_or_more_tasks_succeed(mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.get_tasks", return_value=TEST_DATA)
+    mocker.patch("doru.api.client.Client.get_tasks", return_value=TEST_DATA)
     result = CliRunner().invoke(cli, args=["list"])
     assert result.exit_code == 0
 
@@ -189,7 +189,7 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
 
 
 def test_list_with_no_task_succeed(mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.get_tasks", return_value=[])
+    mocker.patch("doru.api.client.Client.get_tasks", return_value=[])
     result = CliRunner().invoke(cli, args=["list"])
     assert result.exit_code == 0
     lines = result.stdout.split("\n")
@@ -206,14 +206,14 @@ def test_list_with_no_task_succeed(mocker):
 
 @pytest.mark.parametrize("exchange, key, secret", [["bitbank", "xxxxxxxxxx", "yyyyyyyyyy"]])
 def test_add_credential_succeed(exchange, key, secret, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.add_cred", return_value=None)
+    mocker.patch("doru.api.client.Client.add_cred", return_value=None)
     result = CliRunner().invoke(cli, args=["cred", "add", "--exchange", exchange, "--key", key, "--secret", secret])
     assert result.exit_code == 0
 
 
 @pytest.mark.parametrize("exchange, key, secret", [["bitbank", "xxxxxxxxxx", "yyyyyyyyyy"]])
 def test_add_credential_fail_when_add_cred_function_raise_exception(exchange, key, secret, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.add_cred", side_effect=Exception)
+    mocker.patch("doru.api.client.Client.add_cred", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["cred", "add", "--exchange", exchange, "--key", key, "--secret", secret])
     assert result.exit_code != 0
 
@@ -229,14 +229,14 @@ def test_add_credential_with_invalid_params_fail(exchange, key, secret):
 
 @pytest.mark.parametrize("exchange", ["bitbank"])
 def test_remove_credential_succeed(exchange, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.remove_cred", return_value=None)
+    mocker.patch("doru.api.client.Client.remove_cred", return_value=None)
     result = CliRunner().invoke(cli, args=["cred", "remove", "--exchange", exchange])
     assert result.exit_code == 0
 
 
 @pytest.mark.parametrize("exchange", ["bitbank"])
 def test_remove_credential_fail_when_remove_cred_function_raise_exception(exchange, mocker):
-    mocker.patch("doru.daemon_manager.DaemonManager.remove_cred", side_effect=Exception)
+    mocker.patch("doru.api.client.Client.remove_cred", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["cred", "remove", "--exchange", exchange])
     assert result.exit_code != 0
 

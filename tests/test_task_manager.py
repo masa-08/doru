@@ -5,7 +5,7 @@ import pytest
 
 from doru.api.schema import Task, TaskCreate
 from doru.exceptions import MoreThanMaxRunningTasks, TaskDuplicate, TaskNotExist
-from doru.task_manager import TaskManager, create_task_manager
+from doru.manager.task_manager import TaskManager, create_task_manager
 
 TEST_DATA = {
     "1": {
@@ -166,7 +166,7 @@ def test_init_with_invalid_task_schema_raise_exception(tmpdir, tasks):
 
 @pytest.mark.parametrize("tasks", [TEST_DATA])
 def test_init_with_exception_on_reading_raise_exception(task_file, mocker):
-    mocker.patch("doru.task_manager.TaskManager._read", side_effect=Exception)
+    mocker.patch("doru.manager.task_manager.TaskManager._read", side_effect=Exception)
     with pytest.raises(Exception):
         create_task_manager(task_file)
 
@@ -197,7 +197,7 @@ def test_add_task_with_valid_task_succeed(task_manager: TaskManager, tasks, new_
 @pytest.mark.parametrize("tasks", [TEST_DATA])
 @pytest.mark.parametrize("new_task", [TaskCreate(pair="ETH_JPY", amount=1, interval="1month", exchange="bitbank")])
 def test_add_task_with_exception_on_writing_raise_exception(task_manager: TaskManager, tasks, new_task, mocker):
-    mocker.patch("doru.task_manager.TaskManager._write", side_effect=Exception)
+    mocker.patch("doru.manager.task_manager.TaskManager._write", side_effect=Exception)
     with pytest.raises(Exception):
         task_manager.add_task(new_task)
     # assert add_task change nothing
@@ -231,7 +231,7 @@ def test_remove_task_with_invalid_id_raise_exception(task_manager: TaskManager, 
 
 @pytest.mark.parametrize("tasks, id", [(TEST_DATA, "1")])
 def test_remove_task_with_exception_on_writing_raise_exception(task_manager: TaskManager, tasks, id, mocker):
-    mocker.patch("doru.task_manager.TaskManager._write", side_effect=Exception)
+    mocker.patch("doru.manager.task_manager.TaskManager._write", side_effect=Exception)
     with pytest.raises(Exception):
         task_manager.remove_task(id)
     # remove_task change nothing
@@ -277,7 +277,7 @@ def test_start_task_with_duplicate_id_raise_exception(task_manager: TaskManager,
 
 @pytest.mark.parametrize("tasks, id", [(TEST_DATA, "2")])
 def test_start_task_with_exception_on_writing_raise_exception(task_manager: TaskManager, tasks, id, mocker):
-    mocker.patch("doru.task_manager.TaskManager._write", side_effect=Exception)
+    mocker.patch("doru.manager.task_manager.TaskManager._write", side_effect=Exception)
     with pytest.raises(Exception):
         task_manager.start_task(id)
     assert id not in task_manager.pool.pool
@@ -317,7 +317,7 @@ def test_stop_task_with_invalid_id_raise_exception(task_manager: TaskManager, ta
 
 @pytest.mark.parametrize("tasks, id", [(TEST_DATA, "1")])
 def test_stop_task_with_exception_on_writing_raise_exception(task_manager: TaskManager, tasks, id, mocker):
-    mocker.patch("doru.task_manager.TaskManager._write", side_effect=Exception)
+    mocker.patch("doru.manager.task_manager.TaskManager._write", side_effect=Exception)
     with pytest.raises(Exception):
         task_manager.stop_task(id)
     assert id in task_manager.pool.pool

@@ -19,5 +19,5 @@ class SessionWithSocket(Session):
         return super().request(method, self._build_url(url), **kwargs)
 
 
-def create_client(sock: str) -> SessionWithSocket:
+def create_session(sock: str) -> SessionWithSocket:
     return SessionWithSocket(sock)
