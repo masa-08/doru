@@ -64,11 +64,11 @@ class Client:
 
     def add_cred(self, exchange: Exchange, key: str, secret: str) -> None:
         cred = Credential(exchange=exchange, key=key, secret=secret)
-        res = self.session.post("cred", data=cred.json())
+        res = self.session.post("credentials", data=cred.json())
         res.raise_for_status()
 
     def remove_cred(self, exchange: Exchange) -> None:
-        res = self.session.delete(f"cred/{exchange}")
+        res = self.session.delete(f"credentials/{exchange}")
         res.raise_for_status()
 
 
