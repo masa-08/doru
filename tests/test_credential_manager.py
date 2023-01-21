@@ -33,12 +33,17 @@ def test_init_with_valid_credential_file_succeed(credential_file, credentials):
     assert m.credentials == credentials
 
 
-def test_init_without_credential_file_succeed(caplog):
+def test_init_without_credential_file_succeed(tmpdir, caplog):
     from logging import WARNING
 
-    m = create_credential_manager()
+    d = tmpdir.mkdir("tmp")
+    file = f"{d}/credential.json"
+    m = create_credential_manager(file)
+
     assert m.credentials == {}
     assert [("doru", WARNING, "Credential file for this application could not be found.")] == caplog.record_tuples
+    with open(m.file, "r") as f:
+        assert json.load(f) == {}
 
 
 def test_init_with_invalid_json_file_raise_exception(tmpdir):

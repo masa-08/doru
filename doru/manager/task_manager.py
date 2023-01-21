@@ -2,6 +2,7 @@ import json
 import os
 from copy import deepcopy
 from logging import getLogger
+from pathlib import Path
 from shutil import copyfile
 from typing import Any, Callable, Dict, List
 
@@ -29,7 +30,7 @@ class TaskManager:
     _id_len = 12
 
     def __init__(self, file: str, max_running_tasks: int) -> None:
-        self.file = file
+        self.file = Path(file).expanduser()
         self.pool = ScheduleThreadPool(max_running_threads=max_running_tasks)
         self._max_running_tasks = max_running_tasks
         try:
@@ -41,6 +42,10 @@ class TaskManager:
         except FileNotFoundError:
             logger.warning("Task file for this application could not be found.")
             self.tasks = {}
+
+            if not os.path.exists(self.file.parent):
+                self.file.parent.mkdir(parents=True)
+            self._write()
         except Exception as e:
             logger.error(f"Failed to read the Task file: {e}")
             raise e
@@ -55,17 +60,13 @@ class TaskManager:
         def wrapper(self, *args, **kwargs):
             tasks_backup = deepcopy(self.tasks)
             tasks_file_backup = f"{self.file}_bk_{generate()}"
-            if os.path.isfile(self.file):
-                copyfile(src=self.file, dst=tasks_file_backup)
+            copyfile(src=self.file, dst=tasks_file_backup)
 
             try:
                 result = func(self, *args, **kwargs)
             except Exception:
                 self.tasks = tasks_backup
-                if os.path.isfile(tasks_file_backup):
-                    copyfile(src=tasks_file_backup, dst=self.file)
-                else:
-                    os.remove(self.file)
+                copyfile(src=tasks_file_backup, dst=self.file)
                 raise
             finally:
                 os.remove(tasks_file_backup)

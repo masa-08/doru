@@ -1,5 +1,7 @@
 import json
+import os
 from logging import getLogger
+from pathlib import Path
 from typing import Dict, Optional
 
 from doru.api.schema import Credential, CredentialBase
@@ -13,12 +15,16 @@ class CredentialManager:
     credentials: Dict[Exchange, CredentialBase]
 
     def __init__(self, file: str) -> None:
-        self.file = file
+        self.file = Path(file).expanduser()
         try:
             self._read()
         except FileNotFoundError:
             logger.warning("Credential file for this application could not be found.")
             self.credentials = {}
+
+            if not os.path.exists(self.file.parent):
+                self.file.parent.mkdir(parents=True)
+            self._write()
         except Exception as e:
             logger.error(f"Failed to read the credential file: {e}")
             raise e
