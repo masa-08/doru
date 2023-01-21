@@ -1,10 +1,8 @@
 import json
 import os
-from copy import deepcopy
 from logging import getLogger
 from pathlib import Path
-from shutil import copyfile
-from typing import Any, Callable, Dict, List
+from typing import Dict, List
 
 from nanoid import generate
 
@@ -16,6 +14,7 @@ from doru.exceptions import (
     TaskDuplicate,
     TaskNotExist,
 )
+from doru.manager.utils import rollback
 from doru.scheduler import ScheduleThreadPool
 
 logger = getLogger("doru")
@@ -50,30 +49,6 @@ class TaskManager:
             logger.error(f"Failed to read the Task file: {e}")
             raise e
 
-    def _rollback(func: Callable[..., Any]):  # type:ignore[misc]
-        """
-        A decorator that performs rollback processing when an error occurs in any of the operations associated
-        with a task. It does not perform rollback processing for the thread pool, so it must be implemented separately
-        when some processing is required for the thread pool.
-        """
-
-        def wrapper(self, *args, **kwargs):
-            tasks_backup = deepcopy(self.tasks)
-            tasks_file_backup = f"{self.file}_bk_{generate()}"
-            copyfile(src=self.file, dst=tasks_file_backup)
-
-            try:
-                result = func(self, *args, **kwargs)
-            except Exception:
-                self.tasks = tasks_backup
-                copyfile(src=tasks_file_backup, dst=self.file)
-                raise
-            finally:
-                os.remove(tasks_file_backup)
-            return result
-
-        return wrapper
-
     def _read(self) -> None:
         with open(self.file, "r") as f:
             tasks = json.load(f)
@@ -88,7 +63,7 @@ class TaskManager:
     def get_tasks(self) -> List[Task]:
         return list(self.tasks.values())
 
-    @_rollback
+    @rollback(properties=["tasks"], files=["file"])
     def add_task(self, task: TaskCreate) -> Task:
         id = generate(size=self._id_len)
         new_task = Task(
@@ -98,13 +73,13 @@ class TaskManager:
         self._write()
         return new_task
 
-    @_rollback
+    @rollback(properties=["tasks"], files=["file"])
     def remove_task(self, id: str) -> None:
         self.tasks.pop(id)
         self._write()
         self.pool.kill(id)
 
-    @_rollback
+    @rollback(properties=["tasks"], files=["file"])
     def start_task(self, id: str) -> None:
         task = self.tasks.get(id)
         if task is None:
@@ -128,7 +103,7 @@ class TaskManager:
             self.pool.kill(id)
             raise
 
-    @_rollback
+    @rollback(properties=["tasks"], files=["file"])
     def stop_task(self, id: str) -> None:
         if self.tasks.get(id) is None:
             raise TaskNotExist(id)
