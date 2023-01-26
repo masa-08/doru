@@ -50,3 +50,7 @@ class CredentialBase(BaseModel):
 
 class Credential(CredentialBase):
     exchange: Exchange
+
+
+class KeepAlive(BaseModel):
+    pid: int
