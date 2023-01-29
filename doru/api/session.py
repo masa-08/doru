@@ -10,7 +10,8 @@ class SessionWithSocket(Session):
 
     def __init__(self, sock: str) -> None:
         super().__init__()
-        self.sock = quote(sock, safe="")
+        sockpath = Path(sock).expanduser()
+        self.sock = quote(str(sockpath), safe="")
 
     def _build_url(self, path: str) -> str:
         return self.scheme + str(Path(self.sock, path))

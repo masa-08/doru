@@ -1,10 +1,31 @@
-import uvicorn
+import asyncio
 
-from doru.api.app import create_app
+import click
+from requests.exceptions import RequestException
+
+from doru.api.daemonize import run
+from doru.cli import cli
 from doru.logger import init_logger
-
-app = create_app()
 
 if __name__ == "__main__":
     init_logger()
-    uvicorn.run("main:app", host="0.0.0.0")  # remove after daemonize
+    try:
+        cli()
+    except RequestException:
+        click.echo("The background process of this application is starting up...")
+        try:
+            asyncio.run(run())
+        except asyncio.TimeoutError as e:
+            click.echo("The startup of the background process terminated due to timeout...")
+            exit(1)
+        except Exception:
+            click.echo("Something wrong with the startup of the background process...")
+            exit(1)
+
+        click.echo("The background process of this application has been successfully started!")
+        click.echo("---------------------------------------------------------------------------")
+        try:
+            cli()
+        except RequestException:
+            print("There is some kind of communication problem with a background process")
+            exit(1)

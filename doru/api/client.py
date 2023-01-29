@@ -1,8 +1,8 @@
 from typing import List
 
-from doru.api.schema import Credential, Task, TaskCreate
-from doru.envs import DORU_SOCK_NAME
+from doru.api.schema import Credential, KeepAlive, Task, TaskCreate
 from doru.api.session import create_session
+from doru.envs import DORU_SOCK_NAME
 from doru.types import Exchange, Interval, Pair
 
 
@@ -69,6 +69,16 @@ class Client:
 
     def remove_cred(self, exchange: Exchange) -> None:
         res = self.session.delete(f"credentials/{exchange}")
+        res.raise_for_status()
+
+    def keepalive(self) -> KeepAlive:
+        res = self.session.get("keepalive")
+        res.raise_for_status()
+        data = res.json()
+        return KeepAlive(pid=data["pid"])
+
+    def terminate(self) -> None:
+        res = self.session.post("terminate")
         res.raise_for_status()
 
 
