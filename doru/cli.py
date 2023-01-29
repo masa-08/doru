@@ -1,6 +1,7 @@
 from typing import List
 
 import click
+from requests import RequestException
 from tabulate import tabulate
 from typing_extensions import get_args
 
@@ -71,6 +72,8 @@ def add(exchange: Exchange, interval: Interval, amount: int, pair: Pair, start: 
         task = manager.add_task(exchange, interval, amount, pair)
         if start:
             manager.start_task(task.id)  # XXX
+    except RequestException:
+        raise
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
 
@@ -81,6 +84,8 @@ def remove(id: str):
     manager = create_client()
     try:
         manager.remove_task(id)
+    except RequestException:
+        raise
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
 
@@ -104,11 +109,15 @@ def start(ids: List[str], all: str):
         try:
             manager.start_all_tasks()
             return
+        except RequestException:
+            raise
         except Exception as e:
             raise click.ClickException(str(e))  # XXX
     for id in ids:
         try:
             manager.start_task(id)
+        except RequestException:
+            raise
         except Exception as e:
             raise click.ClickException(str(e))  # XXX
 
@@ -132,11 +141,15 @@ def stop(ids: List[str], all: str):
         try:
             manager.stop_all_tasks()
             return
+        except RequestException:
+            raise
         except Exception as e:
             raise click.ClickException(str(e))  # XXX
     for id in ids:
         try:
             manager.stop_task(id)
+        except RequestException:
+            raise
         except Exception as e:
             raise click.ClickException(str(e))  # XXX
 
@@ -146,6 +159,8 @@ def list():
     manager = create_client()
     try:
         tasks = manager.get_tasks()
+    except RequestException:
+        raise
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
     click.echo(
@@ -195,6 +210,8 @@ def cred_add(exchange, key, secret):
     manager = create_client()
     try:
         manager.add_cred(exchange, key, secret)
+    except RequestException:
+        raise
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
 
@@ -212,5 +229,23 @@ def cred_remove(exchange):
     manager = create_client()
     try:
         manager.remove_cred(exchange)
+    except RequestException:
+        raise
+    except Exception as e:
+        raise click.ClickException(str(e))  # XXX
+
+
+@cli.group(help="Terminate the background process for this application.")
+def daemon():
+    pass
+
+
+@daemon.command(name="terminate", help="Terminate the background process for this application.")
+def daemon_terminate():
+    client = create_client()
+    try:
+        client.terminate()
+    except RequestException:
+        raise
     except Exception as e:
         raise click.ClickException(str(e))  # XXX
