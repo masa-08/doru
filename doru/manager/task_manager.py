@@ -17,7 +17,7 @@ from doru.exceptions import (
 from doru.manager.utils import rollback
 from doru.scheduler import ScheduleThreadPool
 
-logger = getLogger("doru")
+logger = getLogger(__name__)
 
 
 def dummy_func() -> None:

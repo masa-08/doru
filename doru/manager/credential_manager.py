@@ -9,7 +9,7 @@ from doru.envs import DORU_CREDENTIAL_FILE
 from doru.manager.utils import rollback
 from doru.types import Exchange
 
-logger = getLogger("doru")
+logger = getLogger(__name__)
 
 
 class CredentialManager:

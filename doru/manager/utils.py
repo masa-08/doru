@@ -8,7 +8,7 @@ from nanoid import generate
 
 from doru.exceptions import DoruError
 
-logger = getLogger("doru")
+logger = getLogger(__name__)
 
 
 def rollback(properties=List[str], files=List[str]) -> Any:

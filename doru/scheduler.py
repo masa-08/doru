@@ -9,7 +9,7 @@ from schedule import Job, Scheduler
 from doru.exceptions import DoruError
 from doru.types import Interval
 
-logger = getLogger("doru")
+logger = getLogger(__name__)
 
 
 # ref: https://gist.github.com/mplewis/8483f1c24f2d6259aef6
@@ -32,7 +32,7 @@ class SafeScheduler(Scheduler):
         try:
             super()._run_job(job)
         except Exception as e:
-            logger.error(str(e))
+            logger.error(f"Failed to run job: {str(e)}")
             if self.reschedule_on_failure:
                 job.last_run = datetime.now()
                 job._schedule_next_run()
