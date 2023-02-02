@@ -26,7 +26,8 @@ def dummy_func() -> None:
 
 class TaskManager:
     tasks: Dict[str, Task]
-    _id_len = 12
+    _size = 12
+    _alphabet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     def __init__(self, file: str, max_running_tasks: int) -> None:
         self.file = Path(file).expanduser()
@@ -65,7 +66,7 @@ class TaskManager:
 
     @rollback(properties=["tasks"], files=["file"])
     def add_task(self, task: TaskCreate) -> Task:
-        id = generate(size=self._id_len)
+        id = generate(size=self._size, alphabet=self._alphabet)
         new_task = Task(
             id=id, pair=task.pair, amount=task.amount, interval=task.interval, exchange=task.exchange, status="Stopped"
         )
