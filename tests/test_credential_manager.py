@@ -41,7 +41,9 @@ def test_init_without_credential_file_succeed(tmpdir, caplog):
     m = create_credential_manager(file)
 
     assert m.credentials == {}
-    assert [("doru", WARNING, "Credential file for this application could not be found.")] == caplog.record_tuples
+    assert [
+        ("doru.manager.credential_manager", WARNING, "Credential file for this application could not be found.")
+    ] == caplog.record_tuples
     with open(m.file, "r") as f:
         assert json.load(f) == {}
 
