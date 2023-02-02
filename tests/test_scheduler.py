@@ -56,7 +56,7 @@ def test_flagged_safe_scheduler_with_job_exception_reschedule_job(scheduler, cou
     while scheduler.next_run is not None:
         scheduler.run_pending()
     assert counter.value == 2
-    assert ("doru", ERROR, "bad job") in caplog.record_tuples
+    assert ("doru.scheduler", ERROR, "Failed to run job: bad job") in caplog.record_tuples
 
 
 def test_unflagged_safe_scheduler_with_job_exception_cancel_job(counter, caplog):
@@ -65,8 +65,8 @@ def test_unflagged_safe_scheduler_with_job_exception_cancel_job(counter, caplog)
     while s.next_run is not None:
         s.run_pending()
     assert counter.value == 1
-    assert ("doru", ERROR, "bad job") in caplog.record_tuples
-    assert ("doru", WARNING, "The job was canceled.") in caplog.record_tuples
+    assert ("doru.scheduler", ERROR, "Failed to run job: bad job") in caplog.record_tuples
+    assert ("doru.scheduler", WARNING, "The job was canceled.") in caplog.record_tuples
 
 
 def test_schedule_thread_run_continuously_until_stop_called(scheduler: SafeScheduler, counter):
