@@ -3,14 +3,17 @@ import asyncio
 import click
 from requests.exceptions import RequestException
 
+from doru.api.client import create_client
 from doru.api.daemonize import run
 from doru.cli import cli
 from doru.logger import init_logger
 
 if __name__ == "__main__":
     init_logger()
+
+    client = create_client()
     try:
-        cli()
+        client.keepalive()
     except RequestException:
         click.echo("The background process of this application is starting up...")
         try:
@@ -24,8 +27,5 @@ if __name__ == "__main__":
 
         click.echo("The background process of this application has been successfully started!")
         click.echo("---------------------------------------------------------------------------")
-        try:
-            cli()
-        except RequestException:
-            print("There is some kind of communication problem with a background process")
-            exit(1)
+
+    cli()
