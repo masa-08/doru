@@ -1,7 +1,8 @@
+import json
 from typing import List
 
 import click
-from requests import RequestException
+from requests import HTTPError
 from tabulate import tabulate
 from typing_extensions import get_args
 
@@ -18,6 +19,11 @@ def validate_cred(ctx, param, value):
     if len(value) == 0:
         raise Exception("Length of API key and secret should be more than 0.")
     return value
+
+
+def raise_with_response_message(e: HTTPError) -> None:
+    res = json.loads(e.response.content)
+    raise click.ClickException(res.get("detail"))
 
 
 @click.group()
@@ -71,11 +77,12 @@ def add(exchange: Exchange, interval: Interval, amount: int, pair: Pair, start: 
     try:
         task = manager.add_task(exchange, interval, amount, pair)
         if start:
-            manager.start_task(task.id)  # XXX
-    except RequestException:
-        raise
+            click.echo("Successfully added.")
+            manager.start_task(task.id)
+    except HTTPError as e:
+        raise_with_response_message(e)
     except Exception as e:
-        raise click.ClickException(str(e))  # XXX
+        raise click.ClickException(str(e))
 
 
 @cli.command(help="Remove a task to accumulate crypto.")
@@ -84,10 +91,11 @@ def remove(id: str):
     manager = create_client()
     try:
         manager.remove_task(id)
-    except RequestException:
-        raise
+    except HTTPError as e:
+        raise_with_response_message(e)
     except Exception as e:
-        raise click.ClickException(str(e))  # XXX
+        raise click.ClickException(str(e))
+    click.echo("Successfully removed.")
 
 
 @cli.command(help="Start tasks to accumulate crypto.")
@@ -108,18 +116,20 @@ def start(ids: List[str], all: str):
     if all:
         try:
             manager.start_all_tasks()
+            click.echo("Successfully started.")
             return
-        except RequestException:
-            raise
+        except HTTPError as e:
+            raise_with_response_message(e)
         except Exception as e:
-            raise click.ClickException(str(e))  # XXX
+            raise click.ClickException(str(e))
     for id in ids:
         try:
             manager.start_task(id)
-        except RequestException:
-            raise
+        except HTTPError as e:
+            raise_with_response_message(e)
         except Exception as e:
-            raise click.ClickException(str(e))  # XXX
+            raise click.ClickException(str(e))
+    click.echo("Successfully started.")
 
 
 @cli.command(help="Stop tasks to accumulate crypto.")
@@ -140,18 +150,20 @@ def stop(ids: List[str], all: str):
     if all:
         try:
             manager.stop_all_tasks()
+            click.echo("Successfully stopped.")
             return
-        except RequestException:
-            raise
+        except HTTPError as e:
+            raise_with_response_message(e)
         except Exception as e:
-            raise click.ClickException(str(e))  # XXX
+            raise click.ClickException(str(e))
     for id in ids:
         try:
             manager.stop_task(id)
-        except RequestException:
-            raise
+        except HTTPError as e:
+            raise_with_response_message(e)
         except Exception as e:
-            raise click.ClickException(str(e))  # XXX
+            raise click.ClickException(str(e))
+    click.echo("Successfully stopped.")
 
 
 @cli.command(help="Display tasks to accumulate crypto.")
@@ -159,10 +171,8 @@ def list():
     manager = create_client()
     try:
         tasks = manager.get_tasks()
-    except RequestException:
-        raise
     except Exception as e:
-        raise click.ClickException(str(e))  # XXX
+        raise click.ClickException(str(e))
     click.echo(
         tabulate(
             [(t.id, t.pair, t.amount, t.interval, t.exchange, t.status) for t in tasks],
@@ -210,10 +220,11 @@ def cred_add(exchange, key, secret):
     manager = create_client()
     try:
         manager.add_cred(exchange, key, secret)
-    except RequestException:
-        raise
+    except HTTPError as e:
+        raise_with_response_message(e)
     except Exception as e:
-        raise click.ClickException(str(e))  # XXX
+        raise click.ClickException(str(e))
+    click.echo("Successfully added.")
 
 
 @cred.command(name="remove", help="Remove the credential of the exchange.")
@@ -229,10 +240,11 @@ def cred_remove(exchange):
     manager = create_client()
     try:
         manager.remove_cred(exchange)
-    except RequestException:
-        raise
+    except HTTPError as e:
+        raise_with_response_message(e)
     except Exception as e:
-        raise click.ClickException(str(e))  # XXX
+        raise click.ClickException(str(e))
+    click.echo("Successfully removed.")
 
 
 @cli.group(help="Terminate the background process for this application.")
@@ -245,7 +257,8 @@ def daemon_terminate():
     client = create_client()
     try:
         client.terminate()
-    except RequestException:
-        raise
+    except HTTPError as e:
+        raise_with_response_message(e)
     except Exception as e:
-        raise click.ClickException(str(e))  # XXX
+        raise click.ClickException(str(e))
+    click.echo("The background process has been successfully terminated.")
