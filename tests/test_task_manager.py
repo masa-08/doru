@@ -13,6 +13,7 @@ TEST_DATA = {
         "pair": "BTC_JPY",
         "amount": 10000,
         "cycle": "Daily",
+        "time": "00:00",
         "exchange": "bitbank",
         "status": "Running",
     },
@@ -21,6 +22,18 @@ TEST_DATA = {
         "pair": "ETH_JPY",
         "amount": 1000,
         "cycle": "Weekly",
+        "weekday": "Mon",
+        "time": "23:59",
+        "exchange": "bitflyer",
+        "status": "Stopped",
+    },
+    "3": {
+        "id": "3",
+        "pair": "ETH_JPY",
+        "amount": 100,
+        "cycle": "Monthly",
+        "day": 28,
+        "time": "23:59",
         "exchange": "bitflyer",
         "status": "Stopped",
     },
@@ -40,14 +53,10 @@ def task_manager(task_file) -> TaskManager:
     return create_task_manager(task_file)
 
 
-def test_tmp():
-    pass
-
-
 @pytest.mark.parametrize("tasks", [TEST_DATA, {}])
 def test_init_with_valid_task_file_succeed(task_file, tasks):
     m = create_task_manager(task_file)
-    assert m.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in m.tasks.items()} == tasks
     # Tasks with `Running` status should be submitted to threadpool
     for t in tasks.values():
         if t["status"] == "Running":
@@ -82,7 +91,16 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
     "tasks",
     [
         # without "id"
-        {"1": {"pair": "BTC_JPY", "amount": 10000, "cycle": "Daily", "exchange": "bitbank", "status": "Running"}},
+        {
+            "1": {
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Daily",
+                "time": "00:00",
+                "exchange": "bitbank",
+                "status": "Running",
+            }
+        },
         # empty "id"
         {
             "1": {
@@ -90,25 +108,45 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
                 "pair": "BTC_JPY",
                 "amount": 10000,
                 "cycle": "Daily",
+                "time": "00:00",
                 "exchange": "bitbank",
                 "status": "Running",
             }
         },
         # without "pair"
-        {"1": {"id": "1", "amount": 10000, "cycle": "Daily", "exchange": "bitbank", "status": "Running"}},
+        {
+            "1": {
+                "id": "1",
+                "amount": 10000,
+                "cycle": "Daily",
+                "time": "00:00",
+                "exchange": "bitbank",
+                "status": "Running",
+            }
+        },
         # invalid "pair"
         {
             "1": {
                 "id": "1",
-                "pair": "INVA_LID",
+                "pair": "INVALID",
                 "amount": 10000,
                 "cycle": "Daily",
+                "time": "00:00",
                 "exchange": "bitbank",
                 "status": "Running",
             }
         },
         # without "amount"
-        {"1": {"id": "1", "pair": "BTC_JPY", "cycle": "Daily", "exchange": "bitbank", "status": "Running"}},
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "cycle": "Daily",
+                "time": "00:00",
+                "exchange": "bitbank",
+                "status": "Running",
+            }
+        },
         # less than 1 "amount"
         {
             "1": {
@@ -116,6 +154,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
                 "pair": "BTC_JPY",
                 "amount": 0,
                 "cycle": "Daily",
+                "time": "00:00",
                 "exchange": "bitbank",
                 "status": "Running",
             }
@@ -127,6 +166,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
                 "pair": "BTC_JPY",
                 "amount": "",
                 "cycle": "Daily",
+                "time": "00:00",
                 "exchange": "bitbank",
                 "status": "Running",
             }
@@ -140,12 +180,95 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
                 "pair": "BTC_JPY",
                 "amount": 10000,
                 "cycle": "min",
+                "time": "00:00",
+                "exchange": "bitbank",
+                "status": "Running",
+            }
+        },
+        # without "weekday" when "cycle" is "Weekly"
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Weekly",
+                "time": "00:00",
+                "exchange": "bitbank",
+                "status": "Running",
+            }
+        },
+        # invalid "weekday" when "cycle" is "Weekly"
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Weekly",
+                "weekday": "Invalid",
+                "time": "00:00",
+                "exchange": "bitbank",
+                "status": "Running",
+            }
+        },
+        # without "day" when "cycle" is "Monthly"
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Monthly",
+                "time": "00:00",
+                "exchange": "bitbank",
+                "status": "Running",
+            }
+        },
+        # invalid "day" when "cycle" is "Monthly"
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Monthly",
+                "day": 29,
+                "time": "00:00",
+                "exchange": "bitbank",
+                "status": "Running",
+            }
+        },
+        # without "time"
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Daily",
+                "exchange": "bitbank",
+                "status": "Running",
+            }
+        },
+        # invalid "time"
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Daily",
+                "time": "24:00",
                 "exchange": "bitbank",
                 "status": "Running",
             }
         },
         # without "exchange"
-        {"1": {"id": "1", "pair": "BTC_JPY", "amount": 10000, "cycle": "Daily", "status": "Running"}},
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Daily",
+                "time": "00:00",
+                "status": "Running",
+            }
+        },
         # invalid "exchange"
         {
             "1": {
@@ -153,14 +276,34 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
                 "pair": "BTC_JPY",
                 "amount": 10000,
                 "cycle": "Daily",
+                "time": "00:00",
                 "exchange": "invalid",
                 "status": "Running",
             }
         },
         # without "status"
-        {"1": {"pair": "BTC_JPY", "amount": 10000, "cycle": "Daily", "exchange": "bitbank"}},
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Daily",
+                "time": "00:00",
+                "exchange": "bitbank",
+            }
+        },
         # invalid "status"
-        {"1": {"pair": "BTC_JPY", "amount": 10000, "cycle": "Daily", "exchange": "bitbank", "status": "invalid"}},
+        {
+            "1": {
+                "id": "1",
+                "pair": "BTC_JPY",
+                "amount": 10000,
+                "cycle": "Daily",
+                "time": "00:00",
+                "exchange": "bitbank",
+                "status": "invalid",
+            }
+        },
     ],
 )
 def test_init_with_invalid_task_schema_raise_exception(tmpdir, tasks):
@@ -185,30 +328,35 @@ def test_get_tasks_succeed(task_manager: TaskManager, tasks):
 
 
 @pytest.mark.parametrize("tasks", [TEST_DATA])
-@pytest.mark.parametrize("new_task", [TaskCreate(pair="ETH_JPY", amount=1, cycle="Monthly", exchange="bitbank")])
-def test_add_task_with_valid_task_succeed(task_manager: TaskManager, tasks, new_task: TaskCreate, mocker):
+@pytest.mark.parametrize(
+    "new_task", [TaskCreate(pair="ETH_JPY", amount=1, cycle="Daily", time="00:00", exchange="bitbank")]
+)
+def test_add_task_with_valid_task_succeed(task_manager: TaskManager, tasks, new_task: TaskCreate):
     t = task_manager.add_task(new_task)
     assert (
         t.pair == new_task.pair
         and t.amount == new_task.amount
         and t.cycle == new_task.cycle
+        and t.time == new_task.time
         and t.exchange == new_task.exchange
         and t.status == "Stopped"
     )
-    result = {**tasks, **{t.id: t.dict()}}
-    assert task_manager.tasks == result
+    result = {**tasks, **{t.id: t.dict(exclude_none=True)}}
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == result
     with open(task_manager.file, "r") as f:
         assert json.load(f) == result
 
 
 @pytest.mark.parametrize("tasks", [TEST_DATA])
-@pytest.mark.parametrize("new_task", [TaskCreate(pair="ETH_JPY", amount=1, cycle="Monthly", exchange="bitbank")])
+@pytest.mark.parametrize(
+    "new_task", [TaskCreate(pair="ETH_JPY", amount=1, cycle="Daily", time="00:00", exchange="bitbank")]
+)
 def test_add_task_with_exception_on_writing_raise_exception(task_manager: TaskManager, tasks, new_task, mocker):
     mocker.patch("doru.manager.task_manager.TaskManager._write", side_effect=Exception)
     with pytest.raises(Exception):
         task_manager.add_task(new_task)
     # assert add_task change nothing
-    assert task_manager.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == tasks
     with open(task_manager.file, "r") as f:
         assert json.load(f) == tasks
 
@@ -220,7 +368,7 @@ def test_remove_task_with_valid_id_succeed(task_manager: TaskManager, tasks, id)
     task_manager.remove_task(id)
     result = tasks.copy()
     result.pop(id)
-    assert task_manager.tasks == result
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == result
     assert id not in task_manager.pool.pool
     with open(task_manager.file, "r") as f:
         assert json.load(f) == result
@@ -231,7 +379,7 @@ def test_remove_task_with_invalid_id_raise_exception(task_manager: TaskManager, 
     with pytest.raises(Exception):
         task_manager.remove_task(id)
     # remove_task change nothing
-    assert task_manager.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == tasks
     with open(task_manager.file, "r") as f:
         assert json.load(f) == tasks
 
@@ -242,7 +390,7 @@ def test_remove_task_with_exception_on_writing_raise_exception(task_manager: Tas
     with pytest.raises(Exception):
         task_manager.remove_task(id)
     # remove_task change nothing
-    assert task_manager.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == tasks
     assert id in task_manager.pool.pool
     with open(task_manager.file, "r") as f:
         assert json.load(f) == tasks
@@ -267,7 +415,7 @@ def test_start_task_with_invalid_id_raise_exception(task_manager: TaskManager, t
     with pytest.raises(TaskNotExist):
         task_manager.start_task(id)
     assert id not in task_manager.pool.pool
-    assert task_manager.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == tasks
     with open(task_manager.file, "r") as f:
         assert json.load(f) == tasks
 
@@ -277,7 +425,7 @@ def test_start_task_with_duplicate_id_raise_exception(task_manager: TaskManager,
     with pytest.raises(TaskDuplicate):
         task_manager.start_task(id)
     assert id in task_manager.pool.pool
-    assert task_manager.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == tasks
     with open(task_manager.file, "r") as f:
         assert json.load(f) == tasks
 
@@ -288,7 +436,7 @@ def test_start_task_with_exception_on_writing_raise_exception(task_manager: Task
     with pytest.raises(Exception):
         task_manager.start_task(id)
     assert id not in task_manager.pool.pool
-    assert task_manager.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == tasks
     with open(task_manager.file, "r") as f:
         assert json.load(f) == tasks
 
@@ -299,7 +447,7 @@ def test_start_task_more_than_max_running_tasks_raise_exception(task_file, tasks
     with pytest.raises(MoreThanMaxRunningTasks):
         m.start_task(id)
     assert id not in m.pool.pool
-    assert m.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in m.tasks.items()} == tasks
     with open(m.file, "r") as f:
         assert json.load(f) == tasks
 
@@ -317,7 +465,7 @@ def test_stop_task_with_valid_id_succeed(task_manager: TaskManager, id):
 def test_stop_task_with_invalid_id_raise_exception(task_manager: TaskManager, tasks, id):
     with pytest.raises(TaskNotExist):
         task_manager.stop_task(id)
-    assert task_manager.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == tasks
     with open(task_manager.file, "r") as f:
         assert json.load(f) == tasks
 
@@ -328,6 +476,6 @@ def test_stop_task_with_exception_on_writing_raise_exception(task_manager: TaskM
     with pytest.raises(Exception):
         task_manager.stop_task(id)
     assert id in task_manager.pool.pool
-    assert task_manager.tasks == tasks
+    assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == tasks
     with open(task_manager.file, "r") as f:
         assert json.load(f) == tasks

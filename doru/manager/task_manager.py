@@ -58,7 +58,7 @@ class TaskManager:
 
     def _write(self) -> None:
         with open(self.file, "w") as f:
-            task_dict = {k: v.dict() for (k, v) in self.tasks.items()}
+            task_dict = {k: v.dict(exclude_none=True) for (k, v) in self.tasks.items()}
             json.dump(task_dict, f)
 
     def get_tasks(self) -> List[Task]:
@@ -68,7 +68,15 @@ class TaskManager:
     def add_task(self, task: TaskCreate) -> Task:
         id = generate(size=self._size, alphabet=self._alphabet)
         new_task = Task(
-            id=id, pair=task.pair, amount=task.amount, cycle=task.cycle, exchange=task.exchange, status="Stopped"
+            pair=task.pair,
+            amount=task.amount,
+            cycle=task.cycle,
+            weekday=task.weekday,
+            day=task.day,
+            time=task.time,
+            exchange=task.exchange,
+            id=id,
+            status="Stopped",
         )
         self.tasks[id] = new_task
         self._write()

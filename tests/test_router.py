@@ -14,6 +14,7 @@ TASK_DATA = {
         "pair": "BTC_JPY",
         "amount": 10000,
         "cycle": "Daily",
+        "time": "00:00",
         "exchange": "bitbank",
         "status": "Running",
     },
@@ -22,6 +23,8 @@ TASK_DATA = {
         "pair": "ETH_JPY",
         "amount": 1000,
         "cycle": "Weekly",
+        "weekday": "Mon",
+        "time": "23:59",
         "exchange": "bitflyer",
         "status": "Stopped",
     },
@@ -75,8 +78,15 @@ def test_get_tasks_succeed(task_manager, tasks):
 @pytest.mark.parametrize(
     "new_task",
     [
-        {"pair": "ETH_JPY", "amount": 1, "cycle": "Monthly", "exchange": "bitbank"},
-        {"pair": "ETH_JPY", "amount": 1, "cycle": "Monthly", "exchange": "bitbank", "foo": "bar"},  # extra key-value
+        {"pair": "ETH_JPY", "amount": 1, "cycle": "Daily", "time": "00:00", "exchange": "bitbank"},
+        {
+            "pair": "ETH_JPY",
+            "amount": 1,
+            "cycle": "Daily",
+            "time": "00:00",
+            "exchange": "bitbank",
+            "foo": "bar",
+        },  # extra key-value
     ],
 )
 def test_post_task_with_valid_body_succeed(task_manager, new_task):
@@ -129,7 +139,7 @@ def test_post_task_with_invalid_body_fail(task_manager, new_task):
 
 @pytest.mark.parametrize(
     "new_task",
-    [{"pair": "ETH_JPY", "amount": 1, "cycle": "Monthly", "exchange": "bitbank"}],
+    [{"pair": "ETH_JPY", "amount": 1, "cycle": "Daily", "time": "00:00", "exchange": "bitbank"}],
 )
 @pytest.mark.parametrize("tasks", [TASK_DATA])
 def test_post_task_with_unexpected_error_fail(task_manager, new_task, mocker):

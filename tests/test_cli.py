@@ -12,6 +12,7 @@ TEST_DATA: List[Task] = [
         id="1",
         exchange="bitbank",
         cycle="Daily",
+        time="00:00",
         amount=10000,
         pair="BTC_JPY",
         status="Stopped",
@@ -19,10 +20,22 @@ TEST_DATA: List[Task] = [
     Task(
         id="2",
         cycle="Weekly",
+        weekday="Mon",
+        time="23:59",
         exchange="bitflyer",
         amount=20000,
         pair="ETH_JPY",
         status="Running",
+    ),
+    Task(
+        id="3",
+        cycle="Monthly",
+        day=28,
+        time="23:59",
+        exchange="bitflyer",
+        amount=30000,
+        pair="ETH_JPY",
+        status="Stopped",
     ),
 ]
 
@@ -50,6 +63,26 @@ def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, cycle, amoun
 def test_add_fail_when_task_daemon_manager_raise_exception(exchange, cycle, amount, pair, mocker):
     mocker.patch("doru.api.client.Client.add_task", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("exchange, cycle, weekday, amount, pair", [["bitbank", "Weekly", "invalid", "1", "BTC_JPY"]])
+def test_add_weekly_task_with_invalid_weekday_option_fail(exchange, cycle, weekday, amount, pair):
+    result = CliRunner().invoke(
+        cli, args=["add", "-e", exchange, "-c", cycle, "-w", weekday, "-a", amount, "-p", pair]
+    )
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("exchange, cycle, day, amount, pair", [["bitbank", "Monthly", "29", "1", "BTC_JPY"]])
+def test_add_monthly_task_with_invalid_day_option_fail(exchange, cycle, day, amount, pair):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-d", day, "-a", amount, "-p", pair])
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("exchange, cycle, time, amount, pair", [["bitbank", "Daily", "24:00", "1", "BTC_JPY"]])
+def test_add_task_with_invalid_time_option_fail(exchange, cycle, time, amount, pair):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-t", time, "-a", amount, "-p", pair])
     assert result.exit_code != 0
 
 

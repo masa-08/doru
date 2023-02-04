@@ -1,9 +1,9 @@
-from typing import List
+from typing import List, Optional
 
 from doru.api.schema import Credential, KeepAlive, Task, TaskCreate
 from doru.api.session import create_session
 from doru.envs import DORU_SOCK_NAME
-from doru.types import Cycle, Exchange, Pair
+from doru.types import Cycle, Exchange, Pair, Weekday
 
 
 class Client:
@@ -20,14 +20,28 @@ class Client:
                 pair=d["pair"],
                 amount=d["amount"],
                 cycle=d["cycle"],
+                weekday=d.get("weekday"),
+                day=d.get("day"),
+                time=d["time"],
                 exchange=d["exchange"],
                 status=d["status"],
             )
             for d in data
         ]
 
-    def add_task(self, exchange: Exchange, cycle: Cycle, amount: int, pair: Pair) -> Task:
-        task = TaskCreate(pair=pair, amount=amount, cycle=cycle, exchange=exchange)
+    def add_task(
+        self,
+        exchange: Exchange,
+        cycle: Cycle,
+        time: str,
+        amount: int,
+        pair: Pair,
+        weekday: Optional[Weekday] = None,
+        day: Optional[int] = None,
+    ) -> Task:
+        task = TaskCreate(
+            pair=pair, amount=amount, cycle=cycle, weekday=weekday, day=day, time=time, exchange=exchange
+        )
         res = self.session.post("tasks", data=task.json())
         res.raise_for_status()
         data = res.json()
@@ -36,6 +50,9 @@ class Client:
             pair=data["pair"],
             amount=data["amount"],
             cycle=data["cycle"],
+            weekday=data.get("weekday"),
+            day=data.get("day"),
+            time=data["time"],
             exchange=data["exchange"],
             status=data["status"],
         )

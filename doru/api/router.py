@@ -19,13 +19,13 @@ logger = getLogger(__name__)
 INTERNAL_ERROR_MESSAGE = "An internal error has occurred."
 
 
-@router.get("/tasks", response_model=List[Task], status_code=status.HTTP_200_OK)
+@router.get("/tasks", response_model=List[Task], response_model_exclude_none=True, status_code=status.HTTP_200_OK)
 @inject
 def get_tasks(manager: TaskManager = Depends(Provide[Container.task_manager])):
     return manager.get_tasks()
 
 
-@router.post("/tasks", response_model=Task, status_code=status.HTTP_201_CREATED)
+@router.post("/tasks", response_model=Task, response_model_exclude_none=True, status_code=status.HTTP_201_CREATED)
 @inject
 def post_task(task: TaskCreate, manager: TaskManager = Depends(Provide[Container.task_manager])):
     logger.info(f"Adding task: {task.dict()}")
