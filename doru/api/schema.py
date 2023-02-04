@@ -1,12 +1,12 @@
 from pydantic import BaseModel, validator
 
-from doru.types import Exchange, Interval, Pair, Status
+from doru.types import Cycle, Exchange, Pair, Status
 
 
 class TaskBase(BaseModel):
     pair: Pair
     amount: int
-    interval: Interval
+    cycle: Cycle
     exchange: Exchange
 
     @validator("amount")

@@ -34,8 +34,8 @@ def scheduler():
 @pytest.fixture
 def thread_pool():
     pool = ScheduleThreadPool(MAX_RUNNING_THREADS)
-    pool.submit("1", lambda x: x, "1day")
-    pool.submit("2", lambda x: x, "1day")
+    pool.submit("1", lambda x: x, "Daily")
+    pool.submit("2", lambda x: x, "Daily")
     return pool
 
 
@@ -71,7 +71,7 @@ def test_unflagged_safe_scheduler_with_job_exception_cancel_job(counter, caplog)
 
 def test_schedule_thread_run_continuously_until_stop_called(scheduler: SafeScheduler, counter):
     scheduler.every(0.1).seconds.do(good_job, counter)
-    t = ScheduleThread(scheduler=scheduler, interval=0.01)
+    t = ScheduleThread(scheduler=scheduler, cycle=0.01)
 
     t.start()
     time.sleep(0.25)
@@ -90,7 +90,7 @@ def test_schedule_thread_run_continuously_until_stop_called(scheduler: SafeSched
 
 def test_schedule_thread_run_will_be_finished_when_there_is_no_job_to_execute(scheduler: SafeScheduler, counter):
     scheduler.every(0.1).seconds.do(good_job, counter)
-    t = ScheduleThread(scheduler=scheduler, interval=0.01)
+    t = ScheduleThread(scheduler=scheduler, cycle=0.01)
 
     t.start()
     time.sleep(0.25)
@@ -104,7 +104,7 @@ def test_schedule_thread_run_will_be_finished_when_there_is_no_job_to_execute(sc
 @pytest.mark.parametrize("key", ["3"])
 def test_schedule_thread_pool_submit_with_new_key_succeed(thread_pool: ScheduleThreadPool, key):
     running_threads_before = thread_pool.running_threads_count
-    thread_pool.submit(key, lambda x: x, "1day", "hoge", "foo")
+    thread_pool.submit(key, lambda x: x, "Daily", "hoge", "foo")
     assert key in thread_pool.pool
     assert thread_pool.running_threads_count == running_threads_before
 
@@ -112,7 +112,7 @@ def test_schedule_thread_pool_submit_with_new_key_succeed(thread_pool: ScheduleT
 @pytest.mark.parametrize("key", ["1"])
 def test_schedule_thread_pool_submit_with_duplicate_key_raise_exception(thread_pool: ScheduleThreadPool, key):
     with pytest.raises(DoruError):
-        thread_pool.submit(key, lambda x: x, "1day", "hoge", "foo")
+        thread_pool.submit(key, lambda x: x, "Daily", "hoge", "foo")
 
 
 @pytest.mark.parametrize("key", ["1"])
@@ -123,7 +123,7 @@ def test_schedule_thread_pool_submit_delete_zombie_thread_and_succeed(thread_poo
     assert key in thread_pool.pool
     assert thread_pool.pool[key].is_started()
 
-    thread_pool.submit(key, lambda x: x, "1day", "hoge", "foo")
+    thread_pool.submit(key, lambda x: x, "Daily", "hoge", "foo")
     assert key in thread_pool.pool
     assert not thread_pool.pool[key].is_started()
 
@@ -141,8 +141,8 @@ def test_schedule_thread_pool_start_when_running_threads_are_less_than_limit_suc
 
 
 def test_schedule_thread_pool_start_when_running_threads_reach_limit_raise_exception(thread_pool: ScheduleThreadPool):
-    thread_pool.submit("3", lambda x: x, "1day")
-    thread_pool.submit("4", lambda x: x, "1day")
+    thread_pool.submit("3", lambda x: x, "Daily")
+    thread_pool.submit("4", lambda x: x, "Daily")
     thread_pool.start("1")
     thread_pool.start("2")
     thread_pool.start("3")

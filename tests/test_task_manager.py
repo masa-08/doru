@@ -12,7 +12,7 @@ TEST_DATA = {
         "id": "1",
         "pair": "BTC_JPY",
         "amount": 10000,
-        "interval": "1day",
+        "cycle": "Daily",
         "exchange": "bitbank",
         "status": "Running",
     },
@@ -20,7 +20,7 @@ TEST_DATA = {
         "id": "2",
         "pair": "ETH_JPY",
         "amount": 1000,
-        "interval": "1week",
+        "cycle": "Weekly",
         "exchange": "bitflyer",
         "status": "Stopped",
     },
@@ -82,40 +82,40 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
     "tasks",
     [
         # without "id"
-        {"1": {"pair": "BTC_JPY", "amount": 10000, "interval": "1day", "exchange": "bitbank", "status": "Running"}},
+        {"1": {"pair": "BTC_JPY", "amount": 10000, "cycle": "Daily", "exchange": "bitbank", "status": "Running"}},
         # empty "id"
         {
             "1": {
                 "id": "",
                 "pair": "BTC_JPY",
                 "amount": 10000,
-                "interval": "1day",
+                "cycle": "Daily",
                 "exchange": "bitbank",
                 "status": "Running",
             }
         },
         # without "pair"
-        {"1": {"id": "1", "amount": 10000, "interval": "1day", "exchange": "bitbank", "status": "Running"}},
+        {"1": {"id": "1", "amount": 10000, "cycle": "Daily", "exchange": "bitbank", "status": "Running"}},
         # invalid "pair"
         {
             "1": {
                 "id": "1",
                 "pair": "INVA_LID",
                 "amount": 10000,
-                "interval": "1day",
+                "cycle": "Daily",
                 "exchange": "bitbank",
                 "status": "Running",
             }
         },
         # without "amount"
-        {"1": {"id": "1", "pair": "BTC_JPY", "interval": "1day", "exchange": "bitbank", "status": "Running"}},
+        {"1": {"id": "1", "pair": "BTC_JPY", "cycle": "Daily", "exchange": "bitbank", "status": "Running"}},
         # less than 1 "amount"
         {
             "1": {
                 "id": "1",
                 "pair": "BTC_JPY",
                 "amount": 0,
-                "interval": "1day",
+                "cycle": "Daily",
                 "exchange": "bitbank",
                 "status": "Running",
             }
@@ -126,41 +126,41 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
                 "id": "1",
                 "pair": "BTC_JPY",
                 "amount": "",
-                "interval": "1day",
+                "cycle": "Daily",
                 "exchange": "bitbank",
                 "status": "Running",
             }
         },
-        # without "interval"
+        # without "cycle"
         {"1": {"id": "1", "pair": "BTC_JPY", "amount": 10000, "exchange": "bitbank", "status": "Running"}},
-        # invalid "interval"
+        # invalid "cycle"
         {
             "1": {
                 "id": "1",
                 "pair": "BTC_JPY",
                 "amount": 10000,
-                "interval": "1min",
+                "cycle": "min",
                 "exchange": "bitbank",
                 "status": "Running",
             }
         },
         # without "exchange"
-        {"1": {"id": "1", "pair": "BTC_JPY", "amount": 10000, "interval": "1day", "status": "Running"}},
+        {"1": {"id": "1", "pair": "BTC_JPY", "amount": 10000, "cycle": "Daily", "status": "Running"}},
         # invalid "exchange"
         {
             "1": {
                 "id": "1",
                 "pair": "BTC_JPY",
                 "amount": 10000,
-                "interval": "1day",
+                "cycle": "Daily",
                 "exchange": "invalid",
                 "status": "Running",
             }
         },
         # without "status"
-        {"1": {"pair": "BTC_JPY", "amount": 10000, "interval": "1day", "exchange": "bitbank"}},
+        {"1": {"pair": "BTC_JPY", "amount": 10000, "cycle": "Daily", "exchange": "bitbank"}},
         # invalid "status"
-        {"1": {"pair": "BTC_JPY", "amount": 10000, "interval": "1day", "exchange": "bitbank", "status": "invalid"}},
+        {"1": {"pair": "BTC_JPY", "amount": 10000, "cycle": "Daily", "exchange": "bitbank", "status": "invalid"}},
     ],
 )
 def test_init_with_invalid_task_schema_raise_exception(tmpdir, tasks):
@@ -185,13 +185,13 @@ def test_get_tasks_succeed(task_manager: TaskManager, tasks):
 
 
 @pytest.mark.parametrize("tasks", [TEST_DATA])
-@pytest.mark.parametrize("new_task", [TaskCreate(pair="ETH_JPY", amount=1, interval="1month", exchange="bitbank")])
+@pytest.mark.parametrize("new_task", [TaskCreate(pair="ETH_JPY", amount=1, cycle="Monthly", exchange="bitbank")])
 def test_add_task_with_valid_task_succeed(task_manager: TaskManager, tasks, new_task: TaskCreate, mocker):
     t = task_manager.add_task(new_task)
     assert (
         t.pair == new_task.pair
         and t.amount == new_task.amount
-        and t.interval == new_task.interval
+        and t.cycle == new_task.cycle
         and t.exchange == new_task.exchange
         and t.status == "Stopped"
     )
@@ -202,7 +202,7 @@ def test_add_task_with_valid_task_succeed(task_manager: TaskManager, tasks, new_
 
 
 @pytest.mark.parametrize("tasks", [TEST_DATA])
-@pytest.mark.parametrize("new_task", [TaskCreate(pair="ETH_JPY", amount=1, interval="1month", exchange="bitbank")])
+@pytest.mark.parametrize("new_task", [TaskCreate(pair="ETH_JPY", amount=1, cycle="Monthly", exchange="bitbank")])
 def test_add_task_with_exception_on_writing_raise_exception(task_manager: TaskManager, tasks, new_task, mocker):
     mocker.patch("doru.manager.task_manager.TaskManager._write", side_effect=Exception)
     with pytest.raises(Exception):

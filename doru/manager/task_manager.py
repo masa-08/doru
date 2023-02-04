@@ -68,7 +68,7 @@ class TaskManager:
     def add_task(self, task: TaskCreate) -> Task:
         id = generate(size=self._size, alphabet=self._alphabet)
         new_task = Task(
-            id=id, pair=task.pair, amount=task.amount, interval=task.interval, exchange=task.exchange, status="Stopped"
+            id=id, pair=task.pair, amount=task.amount, cycle=task.cycle, exchange=task.exchange, status="Stopped"
         )
         self.tasks[id] = new_task
         self._write()
@@ -91,7 +91,7 @@ class TaskManager:
 
         try:
             # TODO: replace dummy_func after inplementing of crypto trading function.
-            self.pool.submit(key=id, func=dummy_func, interval=task.interval)
+            self.pool.submit(key=id, func=dummy_func, cycle=task.cycle)
         except DoruError:
             raise TaskDuplicate(id)
 

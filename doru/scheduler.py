@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict
 from schedule import Job, Scheduler
 
 from doru.exceptions import DoruError
-from doru.types import Interval
+from doru.types import Cycle
 
 logger = getLogger(__name__)
 
@@ -48,14 +48,14 @@ class ScheduleThread(Thread):
     The schedule management functionality depends on the schedule library.
     """
 
-    def __init__(self, scheduler: SafeScheduler, interval: float = 1, *args, **kwargs):
+    def __init__(self, scheduler: SafeScheduler, cycle: float = 1, *args, **kwargs):
         """
         A thread will try to execute jobs at each `interval`.
         Whether or not the job is executed depends on the `scheduler`.
         """
         super().__init__(*args, **kwargs)
         self.scheduler = scheduler
-        self.interval = interval
+        self.cycle = cycle
         self.cease_continuous_run = Event()
         self.started = Event()
 
@@ -75,7 +75,7 @@ class ScheduleThread(Thread):
 
             while not self.cease_continuous_run.is_set() and self._has_jobs():
                 self.scheduler.run_pending()
-                time.sleep(self.interval)
+                time.sleep(self.cycle)
         finally:
             del self._target, self._args, self._kwargs  # type: ignore
 
@@ -98,11 +98,11 @@ class ScheduleThreadPool:
         self.max_running_threads = max_running_threads
         self.pool = {}
 
-    def _create_schedule_thread(self, func: Callable[..., Any], interval: Interval, *args, **kwargs) -> ScheduleThread:
+    def _create_schedule_thread(self, func: Callable[..., Any], cycle: Cycle, *args, **kwargs) -> ScheduleThread:
         scheduler = SafeScheduler()
-        if interval == "1day":
+        if cycle == "Daily":
             scheduler.every(1).days.do(func, args=args, kwargs=kwargs)
-        elif interval == "1week":
+        elif cycle == "Weekly":
             scheduler.every(1).weeks.do(func, args=args, kwargs=kwargs)
         else:
             scheduler.every(4).weeks.do(func, args=args, kwargs=kwargs)  # 1month
@@ -115,7 +115,7 @@ class ScheduleThreadPool:
     def _is_startable(self) -> bool:
         return self.running_threads_count < self.max_running_threads
 
-    def submit(self, key: str, func: Callable[..., Any], interval: Interval, *args, **kwargs) -> None:
+    def submit(self, key: str, func: Callable[..., Any], cycle: Cycle, *args, **kwargs) -> None:
         if key in self.pool:
             # kill the zombie thread if it exists
             if self.pool[key].is_started() and not self.pool[key].is_alive():
@@ -123,7 +123,7 @@ class ScheduleThreadPool:
             else:
                 raise DoruError(f"The key `{key}` is a duplicate.")
 
-        self.pool[key] = self._create_schedule_thread(func, interval, *args, **kwargs)
+        self.pool[key] = self._create_schedule_thread(func, cycle, *args, **kwargs)
 
     def start(self, key: str) -> None:
         if not self._is_startable():

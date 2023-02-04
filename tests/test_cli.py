@@ -3,22 +3,22 @@ from typing import List
 import pytest
 from click.testing import CliRunner
 
+from doru.api.client import Client
 from doru.api.schema import Task
 from doru.cli import cli
-from doru.api.client import Client
 
 TEST_DATA: List[Task] = [
     Task(
         id="1",
         exchange="bitbank",
-        interval="1day",
+        cycle="Daily",
         amount=10000,
         pair="BTC_JPY",
         status="Stopped",
     ),
     Task(
         id="2",
-        interval="1week",
+        cycle="Weekly",
         exchange="bitflyer",
         amount=20000,
         pair="ETH_JPY",
@@ -27,61 +27,59 @@ TEST_DATA: List[Task] = [
 ]
 
 
-@pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "1", "BTC_JPY"]])
-def test_add_with_valid_amount_succeed(exchange, interval, amount, pair, mocker):
+@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "1", "BTC_JPY"]])
+def test_add_with_valid_amount_succeed(exchange, cycle, amount, pair, mocker):
     mocker.patch("doru.api.client.Client.add_task", return_value=TEST_DATA[1])
     mocker.patch("doru.api.client.Client.start_task", return_value=None)
     spy = mocker.spy(Client, "start_task")
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
     assert result.exit_code == 0
     assert spy.call_count == 1
 
 
-@pytest.mark.parametrize("exchange, interval, amount, pair, start", [["bitbank", "1day", "1", "BTC_JPY", "False"]])
-def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, interval, amount, pair, start, mocker):
+@pytest.mark.parametrize("exchange, cycle, amount, pair, start", [["bitbank", "Daily", "1", "BTC_JPY", "False"]])
+def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, cycle, amount, pair, start, mocker):
     mocker.patch("doru.api.client.Client.add_task", return_value=TEST_DATA[1])
     spy = mocker.spy(Client, "start_task")
-    result = CliRunner().invoke(
-        cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair, "-s", start]
-    )
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair, "-s", start])
     assert result.exit_code == 0
     assert spy.call_count == 0
 
 
-@pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "1", "BTC_JPY"]])
-def test_add_fail_when_task_daemon_manager_raise_exception(exchange, interval, amount, pair, mocker):
+@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "1", "BTC_JPY"]])
+def test_add_fail_when_task_daemon_manager_raise_exception(exchange, cycle, amount, pair, mocker):
     mocker.patch("doru.api.client.Client.add_task", side_effect=Exception)
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "0", "BTC_JPY"]])
-def test_add_with_less_than_0_amount_fail(exchange, interval, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "0", "BTC_JPY"]])
+def test_add_with_less_than_0_amount_fail(exchange, cycle, amount, pair):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "12.34", "BTC_JPY"]])
-def test_add_with_not_int_amount_fail(exchange, interval, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "12.34", "BTC_JPY"]])
+def test_add_with_not_int_amount_fail(exchange, cycle, amount, pair):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, interval, amount, pair", [["invalid_exchange", "1day", "10000", "BTC_JPY"]])
-def test_add_with_invalid_exchange_fail(exchange, interval, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, amount, pair", [["invalid_exchange", "Daily", "10000", "BTC_JPY"]])
+def test_add_with_invalid_exchange_fail(exchange, cycle, amount, pair):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "invalid_interval", "10000", "BTC_JPY"]])
-def test_add_with_invalid_interval_fail(exchange, interval, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "invalid_cycle", "10000", "BTC_JPY"]])
+def test_add_with_invalid_cycle_fail(exchange, cycle, amount, pair):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, interval, amount, pair", [["bitbank", "1day", "10000", "INVALID_PAIR"]])
-def test_add_with_invalid_pair_fail(exchange, interval, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-i", interval, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "10000", "INVALID_PAIR"]])
+def test_add_with_invalid_pair_fail(exchange, cycle, amount, pair):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
     assert result.exit_code != 0
 
 
@@ -162,7 +160,7 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
         header[0] == "id"
         and header[1] == "pair"
         and header[2] == "amount"
-        and header[3] == "interval"
+        and header[3] == "cycle"
         and header[4] == "exchange"
         and header[5] == "status"
     )
@@ -172,7 +170,7 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
         words[0] == TEST_DATA[0].id
         and words[1] == TEST_DATA[0].pair
         and words[2] == str(TEST_DATA[0].amount)
-        and words[3] == TEST_DATA[0].interval
+        and words[3] == TEST_DATA[0].cycle
         and words[4] == TEST_DATA[0].exchange
         and words[5] == TEST_DATA[0].status
     )
@@ -182,7 +180,7 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
         words[0] == TEST_DATA[1].id
         and words[1] == TEST_DATA[1].pair
         and words[2] == str(TEST_DATA[1].amount)
-        and words[3] == TEST_DATA[1].interval
+        and words[3] == TEST_DATA[1].cycle
         and words[4] == TEST_DATA[1].exchange
         and words[5] == TEST_DATA[1].status
     )
@@ -198,7 +196,7 @@ def test_list_with_no_task_succeed(mocker):
         header[0] == "id"
         and header[1] == "pair"
         and header[2] == "amount"
-        and header[3] == "interval"
+        and header[3] == "cycle"
         and header[4] == "exchange"
         and header[5] == "status"
     )

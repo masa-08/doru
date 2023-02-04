@@ -3,7 +3,7 @@ from typing import List
 from doru.api.schema import Credential, KeepAlive, Task, TaskCreate
 from doru.api.session import create_session
 from doru.envs import DORU_SOCK_NAME
-from doru.types import Exchange, Interval, Pair
+from doru.types import Cycle, Exchange, Pair
 
 
 class Client:
@@ -19,15 +19,15 @@ class Client:
                 id=d["id"],
                 pair=d["pair"],
                 amount=d["amount"],
-                interval=d["interval"],
+                cycle=d["cycle"],
                 exchange=d["exchange"],
                 status=d["status"],
             )
             for d in data
         ]
 
-    def add_task(self, exchange: Exchange, interval: Interval, amount: int, pair: Pair) -> Task:
-        task = TaskCreate(pair=pair, amount=amount, interval=interval, exchange=exchange)
+    def add_task(self, exchange: Exchange, cycle: Cycle, amount: int, pair: Pair) -> Task:
+        task = TaskCreate(pair=pair, amount=amount, cycle=cycle, exchange=exchange)
         res = self.session.post("tasks", data=task.json())
         res.raise_for_status()
         data = res.json()
@@ -35,7 +35,7 @@ class Client:
             id=data["id"],
             pair=data["pair"],
             amount=data["amount"],
-            interval=data["interval"],
+            cycle=data["cycle"],
             exchange=data["exchange"],
             status=data["status"],
         )

@@ -7,12 +7,12 @@ from tabulate import tabulate
 from typing_extensions import get_args
 
 from doru.api.client import create_client
-from doru.types import Exchange, Interval, Pair
+from doru.types import Cycle, Exchange, Pair
 
 ENABLE_EXCHANGES = get_args(Exchange)
-ENABLE_INTERVALS = get_args(Interval)
+ENABLE_CYCLES = get_args(Cycle)
 ENABLE_PAIRS = get_args(Pair)
-HEADER = ["id", "pair", "amount", "interval", "exchange", "status"]
+HEADER = ["id", "pair", "amount", "cycle", "exchange", "status"]
 
 
 def validate_cred(ctx, param, value):
@@ -41,12 +41,12 @@ def cli():
     help="Select the exchange you will use.",
 )
 @click.option(
-    "--interval",
-    "-i",
+    "--cycle",
+    "-c",
     required=True,
-    type=click.Choice(ENABLE_INTERVALS, case_sensitive=False),
+    type=click.Choice(ENABLE_CYCLES, case_sensitive=False),
     prompt=True,
-    help="Select the interval at which you will purchase crypto.",
+    help="Select the cycle at which you will purchase crypto.",
 )
 @click.option(
     "--amount",
@@ -72,10 +72,10 @@ def cli():
     default=True,
     help="Start the task after adding it.",
 )
-def add(exchange: Exchange, interval: Interval, amount: int, pair: Pair, start: bool):
+def add(exchange: Exchange, cycle: Cycle, amount: int, pair: Pair, start: bool):
     manager = create_client()
     try:
-        task = manager.add_task(exchange, interval, amount, pair)
+        task = manager.add_task(exchange, cycle, amount, pair)
         if start:
             click.echo("Successfully added.")
             manager.start_task(task.id)
@@ -175,7 +175,7 @@ def list():
         raise click.ClickException(str(e))
     click.echo(
         tabulate(
-            [(t.id, t.pair, t.amount, t.interval, t.exchange, t.status) for t in tasks],
+            [(t.id, t.pair, t.amount, t.cycle, t.exchange, t.status) for t in tasks],
             headers=HEADER,
             tablefmt="simple",
         )
