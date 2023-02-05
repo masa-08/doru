@@ -25,6 +25,7 @@ class Client:
                 time=d["time"],
                 exchange=d["exchange"],
                 status=d["status"],
+                next_run=d.get("next_run"),
             )
             for d in data
         ]

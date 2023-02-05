@@ -26,6 +26,7 @@ TEST_DATA: List[Task] = [
         amount=20000,
         pair="ETH_JPY",
         status="Running",
+        next_run="2022-01-01 00:00",
     ),
     Task(
         id="3",
@@ -190,12 +191,13 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
     lines = result.stdout.split("\n")
     header = lines[0].split()
     assert (
-        header[0] == "id"
-        and header[1] == "pair"
-        and header[2] == "amount"
-        and header[3] == "cycle"
-        and header[4] == "exchange"
-        and header[5] == "status"
+        header[0] == "ID"
+        and header[1] == "Pair"
+        and header[2] == "Amount"
+        and header[3] == "Cycle"
+        and " ".join(header[4:7]) == "Next Invest Date"
+        and header[7] == "Exchange"
+        and header[8] == "Status"
     )
 
     words = lines[2].split()
@@ -204,8 +206,9 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
         and words[1] == TEST_DATA[0].pair
         and words[2] == str(TEST_DATA[0].amount)
         and words[3] == TEST_DATA[0].cycle
-        and words[4] == TEST_DATA[0].exchange
-        and words[5] == TEST_DATA[0].status
+        and " ".join(words[4:6]) == "Not Scheduled"
+        and words[6] == TEST_DATA[0].exchange
+        and words[7] == TEST_DATA[0].status
     )
 
     words = lines[3].split()
@@ -214,8 +217,9 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
         and words[1] == TEST_DATA[1].pair
         and words[2] == str(TEST_DATA[1].amount)
         and words[3] == TEST_DATA[1].cycle
-        and words[4] == TEST_DATA[1].exchange
-        and words[5] == TEST_DATA[1].status
+        and " ".join(words[4:6]) == TEST_DATA[1].next_run
+        and words[6] == TEST_DATA[1].exchange
+        and words[7] == TEST_DATA[1].status
     )
 
 
@@ -226,12 +230,13 @@ def test_list_with_no_task_succeed(mocker):
     lines = result.stdout.split("\n")
     header = lines[0].split()
     assert (
-        header[0] == "id"
-        and header[1] == "pair"
-        and header[2] == "amount"
-        and header[3] == "cycle"
-        and header[4] == "exchange"
-        and header[5] == "status"
+        header[0] == "ID"
+        and header[1] == "Pair"
+        and header[2] == "Amount"
+        and header[3] == "Cycle"
+        and " ".join(header[4:7]) == "Next Invest Date"
+        and header[7] == "Exchange"
+        and header[8] == "Status"
     )
 
 

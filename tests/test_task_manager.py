@@ -16,6 +16,7 @@ TEST_DATA = {
         "time": "00:00",
         "exchange": "bitbank",
         "status": "Running",
+        "next_run": "2022-01-01 00:00",
     },
     "2": {
         "id": "2",
@@ -26,6 +27,7 @@ TEST_DATA = {
         "time": "23:59",
         "exchange": "bitflyer",
         "status": "Stopped",
+        "next_run": "2022-01-01 00:00",
     },
     "3": {
         "id": "3",
@@ -36,6 +38,7 @@ TEST_DATA = {
         "time": "23:59",
         "exchange": "bitflyer",
         "status": "Stopped",
+        "next_run": "2022-01-01 00:00",
     },
 }
 
@@ -322,7 +325,8 @@ def test_init_with_exception_on_reading_raise_exception(task_file, mocker):
 
 
 @pytest.mark.parametrize("tasks", [TEST_DATA, {}])
-def test_get_tasks_succeed(task_manager: TaskManager, tasks):
+def test_get_tasks_succeed(task_manager: TaskManager, tasks, mocker):
+    mocker.patch("doru.manager.task_manager.TaskManager._get_next_run", return_value="2022-01-01 00:00")
     t = task_manager.get_tasks()
     assert t == [Task.parse_obj(v) for v in tasks.values()]
 

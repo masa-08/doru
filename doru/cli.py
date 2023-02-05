@@ -14,7 +14,7 @@ ENABLE_EXCHANGES = get_args(Exchange)
 ENABLE_CYCLES = get_args(Cycle)
 ENABLE_PAIRS = get_args(Pair)
 WEEKDAY = get_args(Weekday)
-HEADER = ["id", "pair", "amount", "cycle", "exchange", "status"]
+HEADER = ["ID", "Pair", "Amount", "Cycle", "Next Invest Date", "Exchange", "Status"]
 
 
 def validate_cred(ctx, param, value):
@@ -238,7 +238,7 @@ def list():
         raise click.ClickException(str(e))
     click.echo(
         tabulate(
-            [(t.id, t.pair, t.amount, t.cycle, t.exchange, t.status) for t in tasks],
+            [(t.id, t.pair, t.amount, t.cycle, t.next_run or "Not Scheduled", t.exchange, t.status) for t in tasks],
             headers=HEADER,
             tablefmt="simple",
         )

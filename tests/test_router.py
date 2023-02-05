@@ -17,6 +17,7 @@ TASK_DATA = {
         "time": "00:00",
         "exchange": "bitbank",
         "status": "Running",
+        "next_run": "2022-01-01 00:00",
     },
     "2": {
         "id": "2",
@@ -27,6 +28,7 @@ TASK_DATA = {
         "time": "23:59",
         "exchange": "bitflyer",
         "status": "Stopped",
+        "next_run": "2022-01-01 00:00",
     },
 }
 CREDENTIAL_DATA = {
@@ -66,7 +68,8 @@ def credential_manager(credential_file) -> CredentialManager:
 
 
 @pytest.mark.parametrize("tasks", [TASK_DATA, {}])
-def test_get_tasks_succeed(task_manager, tasks):
+def test_get_tasks_succeed(task_manager, tasks, mocker):
+    mocker.patch("doru.manager.task_manager.TaskManager._get_next_run", return_value="2022-01-01 00:00")
     with app.container.task_manager.override(task_manager):  # type:ignore
         client = TestClient(app)
         res = client.get("/tasks")

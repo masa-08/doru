@@ -5,6 +5,8 @@ from pydantic import BaseModel, validator
 
 from doru.types import Cycle, Exchange, Pair, Status, Weekday
 
+TIMESTAMP_STRING_FORMAT = "%Y-%m-%d %H:%M"
+
 
 class TaskBase(BaseModel):
     pair: Pair
@@ -53,11 +55,21 @@ class TaskCreate(TaskBase):
 class Task(TaskBase):
     id: str
     status: Status
+    next_run: Optional[str]
 
     @validator("id")
     def empty_id_forbidden(cls, v):
         if len(v) == 0:
             raise ValueError("Empty id is forbidden.")
+        return v
+
+    @validator("next_run")
+    def next_run_should_be_specified_format(cls, v: Optional[str]):
+        if v is not None:
+            try:
+                datetime.strptime(v, TIMESTAMP_STRING_FORMAT)
+            except ValueError:
+                raise ValueError("The next_run parameter should be in the following format `%Y-%m-%d %H:%M`.")
         return v
 
 

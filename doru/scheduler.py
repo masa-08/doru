@@ -2,14 +2,16 @@ import time
 from datetime import datetime
 from logging import getLogger
 from threading import Event, Thread
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 
 from schedule import Job, Scheduler
 
 from doru.exceptions import DoruError
-from doru.types import Cycle
+from doru.types import Cycle, Weekday
 
 logger = getLogger(__name__)
+
+DEFAULT_TIME = "00:00"
 
 
 # ref: https://gist.github.com/mplewis/8483f1c24f2d6259aef6
@@ -69,10 +71,6 @@ class ScheduleThread(Thread):
             # e.g. Execute every Monday at xx:xx
             self.started.set()
 
-            # Execute the registered job immediately after the start of the thread
-            if not self.cease_continuous_run.is_set():
-                self.scheduler.run_all()
-
             while not self.cease_continuous_run.is_set() and self._has_jobs():
                 self.scheduler.run_pending()
                 time.sleep(self.cycle)
@@ -98,14 +96,43 @@ class ScheduleThreadPool:
         self.max_running_threads = max_running_threads
         self.pool = {}
 
-    def _create_schedule_thread(self, func: Callable[..., Any], cycle: Cycle, *args, **kwargs) -> ScheduleThread:
+    def _create_schedule_thread(
+        self,
+        func: Callable[..., Any],
+        cycle: Cycle,
+        weekday: Optional[Weekday] = None,
+        day: Optional[int] = None,
+        time: str = DEFAULT_TIME,
+        *args,
+        **kwargs,
+    ) -> ScheduleThread:
         scheduler = SafeScheduler()
         if cycle == "Daily":
-            scheduler.every(1).days.do(func, args=args, kwargs=kwargs)
+            scheduler.every().day.at(time).do(func, args=args, kwargs=kwargs)
         elif cycle == "Weekly":
-            scheduler.every(1).weeks.do(func, args=args, kwargs=kwargs)
-        else:
-            scheduler.every(4).weeks.do(func, args=args, kwargs=kwargs)  # 1month
+            if weekday is None:
+                raise DoruError("The weekday parameter should not be None in the weekly schedule thread.")
+
+            if weekday == "Sun":
+                scheduler.every().sunday.at(time).do(func, args=args, kwargs=kwargs)
+            elif weekday == "Mon":
+                scheduler.every().monday.at(time).do(func, args=args, kwargs=kwargs)
+            elif weekday == "Tue":
+                scheduler.every().tuesday.at(time).do(func, args=args, kwargs=kwargs)
+            elif weekday == "Wed":
+                scheduler.every().wednesday.at(time).do(func, args=args, kwargs=kwargs)
+            elif weekday == "Thu":
+                scheduler.every().thursday.at(time).do(func, args=args, kwargs=kwargs)
+            elif weekday == "Fri":
+                scheduler.every().friday.at(time).do(func, args=args, kwargs=kwargs)
+            elif weekday == "Sat":
+                scheduler.every().saturday.at(time).do(func, args=args, kwargs=kwargs)
+        elif cycle == "Monthly":
+            if day is None:
+                raise DoruError("The day parameter should not be None in the monthly schedule thread.")
+
+            # TODO: use day parameter
+            scheduler.every(4).weeks.at(time).do(func, args=args, kwargs=kwargs)  # 1month
         return ScheduleThread(scheduler, daemon=True)
 
     @property
@@ -115,7 +142,17 @@ class ScheduleThreadPool:
     def _is_startable(self) -> bool:
         return self.running_threads_count < self.max_running_threads
 
-    def submit(self, key: str, func: Callable[..., Any], cycle: Cycle, *args, **kwargs) -> None:
+    def submit(
+        self,
+        key: str,
+        func: Callable[..., Any],
+        cycle: Cycle,
+        weekday: Optional[Weekday] = None,
+        day: Optional[int] = None,
+        time: str = DEFAULT_TIME,
+        *args,
+        **kwargs,
+    ) -> None:
         if key in self.pool:
             # kill the zombie thread if it exists
             if self.pool[key].is_started() and not self.pool[key].is_alive():
@@ -123,7 +160,7 @@ class ScheduleThreadPool:
             else:
                 raise DoruError(f"The key `{key}` is a duplicate.")
 
-        self.pool[key] = self._create_schedule_thread(func, cycle, *args, **kwargs)
+        self.pool[key] = self._create_schedule_thread(func, cycle, weekday, day, time, *args, **kwargs)
 
     def start(self, key: str) -> None:
         if not self._is_startable():
@@ -140,3 +177,10 @@ class ScheduleThreadPool:
             del self.pool[key]
         except KeyError:
             logger.debug(f"The key `{key}` is missing.")
+
+    def next_run(self, key: str) -> Optional[datetime]:
+        try:
+            return self.pool[key].scheduler.next_run
+        except KeyError:
+            logger.debug(f"The key `{key}` is missing.")
+        return None
