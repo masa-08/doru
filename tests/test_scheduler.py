@@ -1,5 +1,5 @@
 import time
-from datetime import timedelta
+from datetime import date, datetime, timedelta
 from logging import ERROR, WARNING
 
 import pytest
@@ -34,8 +34,8 @@ def scheduler():
 @pytest.fixture
 def thread_pool():
     pool = ScheduleThreadPool(MAX_RUNNING_THREADS)
-    pool.submit("1", lambda x: x, "1day")
-    pool.submit("2", lambda x: x, "1day")
+    pool.submit("1", lambda x: x, "Daily")
+    pool.submit("2", lambda x: x, "Daily")
     return pool
 
 
@@ -71,7 +71,7 @@ def test_unflagged_safe_scheduler_with_job_exception_cancel_job(counter, caplog)
 
 def test_schedule_thread_run_continuously_until_stop_called(scheduler: SafeScheduler, counter):
     scheduler.every(0.1).seconds.do(good_job, counter)
-    t = ScheduleThread(scheduler=scheduler, interval=0.01)
+    t = ScheduleThread(scheduler=scheduler, cycle=0.01)
 
     t.start()
     time.sleep(0.25)
@@ -79,18 +79,17 @@ def test_schedule_thread_run_continuously_until_stop_called(scheduler: SafeSched
 
     t.stop()
     time.sleep(0.25)
-    # There are three execution timings
-    # - Immediately after the start of the thread
+    # There are two execution timings
     # - Approximately 0.1 second after thread start
     # - Approximately 0.2 seconds after thread start
     # After that, the thread is stopped, job execution stops, and the thread becomes inactive.
-    assert counter.value == 3
+    assert counter.value == 2
     assert not t.is_alive()
 
 
 def test_schedule_thread_run_will_be_finished_when_there_is_no_job_to_execute(scheduler: SafeScheduler, counter):
     scheduler.every(0.1).seconds.do(good_job, counter)
-    t = ScheduleThread(scheduler=scheduler, interval=0.01)
+    t = ScheduleThread(scheduler=scheduler, cycle=0.01)
 
     t.start()
     time.sleep(0.25)
@@ -104,15 +103,81 @@ def test_schedule_thread_run_will_be_finished_when_there_is_no_job_to_execute(sc
 @pytest.mark.parametrize("key", ["3"])
 def test_schedule_thread_pool_submit_with_new_key_succeed(thread_pool: ScheduleThreadPool, key):
     running_threads_before = thread_pool.running_threads_count
-    thread_pool.submit(key, lambda x: x, "1day", "hoge", "foo")
+    thread_pool.submit(key, lambda x: x, "Daily")
     assert key in thread_pool.pool
     assert thread_pool.running_threads_count == running_threads_before
+
+
+# 2023-01-01 is Sunday.
+@pytest.mark.freeze_time("2023-01-01 00:00:00")
+@pytest.mark.parametrize("key", ["3"])
+@pytest.mark.parametrize(
+    "weekday, expected",
+    [
+        ("Sun", datetime(2023, 1, 1, 0, 0)),
+        ("Mon", datetime(2023, 1, 2, 0, 0)),
+        ("Tue", datetime(2023, 1, 3, 0, 0)),
+        ("Wed", datetime(2023, 1, 4, 0, 0)),
+        ("Thu", datetime(2023, 1, 5, 0, 0)),
+        ("Fri", datetime(2023, 1, 6, 0, 0)),
+        ("Sat", datetime(2023, 1, 7, 0, 0)),
+    ],
+)
+def test_schedule_thread_pool_submit_weekly_thread_with_new_key_succeed(
+    thread_pool: ScheduleThreadPool, key, weekday, expected
+):
+    running_threads_before = thread_pool.running_threads_count
+    thread_pool.submit(key, lambda x: x, "Weekly", weekday=weekday)
+    assert key in thread_pool.pool
+    assert thread_pool.running_threads_count == running_threads_before
+
+    next_run = thread_pool.next_run(key)
+    assert next_run is not None and next_run == expected
+
+
+@pytest.mark.freeze_time("2023-01-01 00:01:00")
+@pytest.mark.parametrize("key", ["3"])
+@pytest.mark.parametrize(
+    "day, time, expected",
+    [
+        (1, "00:00", datetime(2023, 2, 1, 0, 0)),
+        (1, "00:01", datetime(2023, 1, 1, 0, 1)),
+        (1, "00:02", datetime(2023, 1, 1, 0, 2)),
+        (2, "00:00", datetime(2023, 1, 2, 0, 0)),
+    ],
+)
+def test_schedule_thread_pool_submit_monthly_thread_with_new_key_succeed(
+    thread_pool: ScheduleThreadPool, key, day, time, expected
+):
+    running_threads_before = thread_pool.running_threads_count
+    thread_pool.submit(key, lambda x: x, "Monthly", day=day, time=time)
+    assert key in thread_pool.pool
+    assert thread_pool.running_threads_count == running_threads_before
+
+    next_run = thread_pool.next_run(key)
+    assert next_run is not None and next_run == expected
 
 
 @pytest.mark.parametrize("key", ["1"])
 def test_schedule_thread_pool_submit_with_duplicate_key_raise_exception(thread_pool: ScheduleThreadPool, key):
     with pytest.raises(DoruError):
-        thread_pool.submit(key, lambda x: x, "1day", "hoge", "foo")
+        thread_pool.submit(key, lambda x: x, "Daily")
+
+
+@pytest.mark.parametrize("key", ["3"])
+def test_schedule_thread_pool_submit_without_weekday_param_for_weekly_thread_raise_exception(
+    thread_pool: ScheduleThreadPool, key
+):
+    with pytest.raises(DoruError):
+        thread_pool.submit(key, lambda x: x, "Weekly")
+
+
+@pytest.mark.parametrize("key", ["3"])
+def test_schedule_thread_pool_submit_without_day_param_for_monthly_thread_raise_exception(
+    thread_pool: ScheduleThreadPool, key
+):
+    with pytest.raises(DoruError):
+        thread_pool.submit(key, lambda x: x, "Monthly")
 
 
 @pytest.mark.parametrize("key", ["1"])
@@ -123,7 +188,7 @@ def test_schedule_thread_pool_submit_delete_zombie_thread_and_succeed(thread_poo
     assert key in thread_pool.pool
     assert thread_pool.pool[key].is_started()
 
-    thread_pool.submit(key, lambda x: x, "1day", "hoge", "foo")
+    thread_pool.submit(key, lambda x: x, "Daily")
     assert key in thread_pool.pool
     assert not thread_pool.pool[key].is_started()
 
@@ -141,8 +206,8 @@ def test_schedule_thread_pool_start_when_running_threads_are_less_than_limit_suc
 
 
 def test_schedule_thread_pool_start_when_running_threads_reach_limit_raise_exception(thread_pool: ScheduleThreadPool):
-    thread_pool.submit("3", lambda x: x, "1day")
-    thread_pool.submit("4", lambda x: x, "1day")
+    thread_pool.submit("3", lambda x: x, "Daily")
+    thread_pool.submit("4", lambda x: x, "Daily")
     thread_pool.start("1")
     thread_pool.start("2")
     thread_pool.start("3")
@@ -182,3 +247,20 @@ def test_schedule_thread_pool_kill_with_invalid_key_only_output_debug_log(
 
     thread_pool.kill(key)
     assert f"The key `{key}` is missing." in caplog.text
+
+
+@pytest.mark.parametrize("key", ["1", "2"])
+def test_schedule_thread_pool_next_run_with_valid_key_succeed(thread_pool: ScheduleThreadPool, key):
+    from doru.api.schema import TIMESTAMP_STRING_FORMAT
+
+    tomorrow = date.today() + timedelta(days=1)
+    next_run = thread_pool.next_run(key)
+    assert next_run is not None and next_run.strftime(TIMESTAMP_STRING_FORMAT) == tomorrow.strftime(
+        TIMESTAMP_STRING_FORMAT
+    )
+
+
+@pytest.mark.parametrize("key", ["3"])
+def test_schedule_thread_pool_next_run_with_not_submitted_thread_retrun_none(thread_pool: ScheduleThreadPool, key):
+    thread_pool.pool[key] = ScheduleThread(SafeScheduler())
+    assert thread_pool.next_run(key) is None

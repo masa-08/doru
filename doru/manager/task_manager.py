@@ -2,11 +2,11 @@ import json
 import os
 from logging import getLogger
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from nanoid import generate
 
-from doru.api.schema import Task, TaskCreate
+from doru.api.schema import TIMESTAMP_STRING_FORMAT, Task, TaskCreate
 from doru.envs import DORU_TASK_FILE, DORU_TASK_LIMIT
 from doru.exceptions import (
     DoruError,
@@ -20,7 +20,7 @@ from doru.scheduler import ScheduleThreadPool
 logger = getLogger(__name__)
 
 
-def dummy_func() -> None:
+def dummy_func(*args, **kwargs) -> None:
     pass
 
 
@@ -58,17 +58,28 @@ class TaskManager:
 
     def _write(self) -> None:
         with open(self.file, "w") as f:
-            task_dict = {k: v.dict() for (k, v) in self.tasks.items()}
+            task_dict = {k: v.dict(exclude_none=True) for (k, v) in self.tasks.items()}
             json.dump(task_dict, f)
 
     def get_tasks(self) -> List[Task]:
+        # update next_run fields
+        for (k, v) in self.tasks.items():
+            self.tasks[k].next_run = self._get_next_run(k)
         return list(self.tasks.values())
 
     @rollback(properties=["tasks"], files=["file"])
     def add_task(self, task: TaskCreate) -> Task:
         id = generate(size=self._size, alphabet=self._alphabet)
         new_task = Task(
-            id=id, pair=task.pair, amount=task.amount, interval=task.interval, exchange=task.exchange, status="Stopped"
+            pair=task.pair,
+            amount=task.amount,
+            cycle=task.cycle,
+            weekday=task.weekday,
+            day=task.day,
+            time=task.time,
+            exchange=task.exchange,
+            id=id,
+            status="Stopped",
         )
         self.tasks[id] = new_task
         self._write()
@@ -91,7 +102,9 @@ class TaskManager:
 
         try:
             # TODO: replace dummy_func after inplementing of crypto trading function.
-            self.pool.submit(key=id, func=dummy_func, interval=task.interval)
+            self.pool.submit(
+                key=id, func=dummy_func, cycle=task.cycle, weekday=task.weekday, day=task.day, time=task.time
+            )
         except DoruError:
             raise TaskDuplicate(id)
 
@@ -112,6 +125,12 @@ class TaskManager:
         self.tasks[id].status = "Stopped"
         self._write()
         self.pool.kill(id)
+
+    def _get_next_run(self, id: str) -> Optional[str]:
+        next_run = self.pool.next_run(id)
+        if next_run is not None:
+            return next_run.strftime(TIMESTAMP_STRING_FORMAT)
+        return None
 
 
 def create_task_manager(file: str = DORU_TASK_FILE, max_running_tasks: int = DORU_TASK_LIMIT) -> TaskManager:

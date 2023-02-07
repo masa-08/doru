@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import List
 
 import click
@@ -7,17 +8,33 @@ from tabulate import tabulate
 from typing_extensions import get_args
 
 from doru.api.client import create_client
-from doru.types import Exchange, Interval, Pair
+from doru.types import Cycle, Exchange, Pair, Weekday
 
 ENABLE_EXCHANGES = get_args(Exchange)
-ENABLE_INTERVALS = get_args(Interval)
+ENABLE_CYCLES = get_args(Cycle)
 ENABLE_PAIRS = get_args(Pair)
-HEADER = ["id", "pair", "amount", "interval", "exchange", "status"]
+WEEKDAY = get_args(Weekday)
+HEADER = ["ID", "Pair", "Amount", "Cycle", "Next Invest Date", "Exchange", "Status"]
 
 
 def validate_cred(ctx, param, value):
     if len(value) == 0:
         raise Exception("Length of API key and secret should be more than 0.")
+    return value
+
+
+def filter_options_about_date(ctx: click.Context, param, value: Cycle):
+    def _disable_prompts(ctx: click.Context, disable_options: List[str]):
+        for p in ctx.command.params:
+            if isinstance(p, click.Option) and p.name in disable_options:
+                p.prompt = None
+
+    if value == "Daily":
+        _disable_prompts(ctx, ["weekday", "day"])
+    elif value == "Weekly":
+        _disable_prompts(ctx, ["day"])
+    elif value == "Monthly":
+        _disable_prompts(ctx, ["weekday"])
     return value
 
 
@@ -41,12 +58,41 @@ def cli():
     help="Select the exchange you will use.",
 )
 @click.option(
-    "--interval",
-    "-i",
+    "--cycle",
+    "-c",
     required=True,
-    type=click.Choice(ENABLE_INTERVALS, case_sensitive=False),
+    type=click.Choice(ENABLE_CYCLES, case_sensitive=False),
     prompt=True,
     help="Select the interval at which you will purchase crypto.",
+    callback=filter_options_about_date,
+)
+@click.option(
+    "--weekday",
+    "-w",
+    type=click.Choice(WEEKDAY, case_sensitive=False),
+    prompt=True,
+    default="Sun",
+    show_default=True,
+    help="Select the day of the week you will purchase crypto. This option is enabled when the interval is set to `week`.",
+)
+@click.option(
+    "--day",
+    "-d",
+    type=click.IntRange(min=1, max=28),
+    prompt=True,
+    default=1,
+    show_default=True,
+    help="Enter the day in each month on which you will purchase crypto. This option is enabled when the interval is set to `month`.",
+)
+@click.option(
+    "--time",
+    "-t",
+    required=True,
+    type=click.DateTime(["%H:%M"]),
+    prompt=True,
+    default="00:00",
+    show_default=True,
+    help="Enter the time you will purchase crypto.",
 )
 @click.option(
     "--amount",
@@ -72,10 +118,27 @@ def cli():
     default=True,
     help="Start the task after adding it.",
 )
-def add(exchange: Exchange, interval: Interval, amount: int, pair: Pair, start: bool):
+def add(
+    exchange: Exchange,
+    cycle: Cycle,
+    weekday: Weekday,
+    day: int,
+    time: datetime,
+    amount: int,
+    pair: Pair,
+    start: bool,
+):
     manager = create_client()
     try:
-        task = manager.add_task(exchange, interval, amount, pair)
+        task = manager.add_task(
+            exchange=exchange,
+            cycle=cycle,
+            time=datetime.strftime(time, "%H:%M"),
+            amount=amount,
+            pair=pair,
+            weekday=weekday,
+            day=day,
+        )
         if start:
             click.echo("Successfully added.")
             manager.start_task(task.id)
@@ -175,7 +238,7 @@ def list():
         raise click.ClickException(str(e))
     click.echo(
         tabulate(
-            [(t.id, t.pair, t.amount, t.interval, t.exchange, t.status) for t in tasks],
+            [(t.id, t.pair, t.amount, t.cycle, t.next_run or "Not Scheduled", t.exchange, t.status) for t in tasks],
             headers=HEADER,
             tablefmt="simple",
         )
