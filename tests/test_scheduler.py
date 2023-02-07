@@ -135,6 +135,29 @@ def test_schedule_thread_pool_submit_weekly_thread_with_new_key_succeed(
     assert next_run is not None and next_run == expected
 
 
+@pytest.mark.freeze_time("2023-01-01 00:01:00")
+@pytest.mark.parametrize("key", ["3"])
+@pytest.mark.parametrize(
+    "day, time, expected",
+    [
+        (1, "00:00", datetime(2023, 2, 1, 0, 0)),
+        (1, "00:01", datetime(2023, 1, 1, 0, 1)),
+        (1, "00:02", datetime(2023, 1, 1, 0, 2)),
+        (2, "00:00", datetime(2023, 1, 2, 0, 0)),
+    ],
+)
+def test_schedule_thread_pool_submit_monthly_thread_with_new_key_succeed(
+    thread_pool: ScheduleThreadPool, key, day, time, expected
+):
+    running_threads_before = thread_pool.running_threads_count
+    thread_pool.submit(key, lambda x: x, "Monthly", day=day, time=time)
+    assert key in thread_pool.pool
+    assert thread_pool.running_threads_count == running_threads_before
+
+    next_run = thread_pool.next_run(key)
+    assert next_run is not None and next_run == expected
+
+
 @pytest.mark.parametrize("key", ["1"])
 def test_schedule_thread_pool_submit_with_duplicate_key_raise_exception(thread_pool: ScheduleThreadPool, key):
     with pytest.raises(DoruError):
