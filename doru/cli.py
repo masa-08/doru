@@ -281,6 +281,7 @@ def cred():
 )
 def cred_add(exchange, key, secret):
     manager = create_client()
+    key, secret = key.strip(), secret.strip()
     try:
         manager.add_cred(exchange, key, secret)
     except HTTPError as e:
