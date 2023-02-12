@@ -240,11 +240,23 @@ def test_list_with_no_task_succeed(mocker):
     )
 
 
-@pytest.mark.parametrize("exchange, key, secret", [["bitbank", "xxxxxxxxxx", "yyyyyyyyyy"]])
-def test_add_credential_succeed(exchange, key, secret, mocker):
-    mocker.patch("doru.api.client.Client.add_cred", return_value=None)
+@pytest.mark.parametrize("exchange, expected_key, expected_secret", [("bitbank", "xxxxxxxxxx", "yyyyyyyyyy")])
+@pytest.mark.parametrize(
+    "key, secret",
+    [
+        ("xxxxxxxxxx", "yyyyyyyyyy"),
+        (" xxxxxxxxxx ", " yyyyyyyyyy "),
+        ("\nxxxxxxxxxx\n", "\nyyyyyyyyyy\n"),
+        ("\txxxxxxxxxx\t", "\tyyyyyyyyyy\t"),
+    ],
+)
+def test_add_credential_succeed(exchange, key, secret, expected_key, expected_secret, mocker):
+    mock = mocker.patch("doru.api.client.Client.add_cred", return_value=None)
     result = CliRunner().invoke(cli, args=["cred", "add", "--exchange", exchange, "--key", key, "--secret", secret])
     assert result.exit_code == 0
+
+    mock_args = mock.call_args_list
+    assert mock_args[0][0] == (exchange, expected_key, expected_secret)
 
 
 @pytest.mark.parametrize("exchange, key, secret", [["bitbank", "xxxxxxxxxx", "yyyyyyyyyy"]])
