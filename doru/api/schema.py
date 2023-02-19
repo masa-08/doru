@@ -1,11 +1,17 @@
 from datetime import datetime
 from typing import Optional
 
+import ccxt
 from pydantic import BaseModel, validator
 
-from doru.types import Cycle, Exchange, Pair, Status, Weekday
+from doru.types import Cycle, Pair, Status, Weekday
 
 TIMESTAMP_STRING_FORMAT = "%Y-%m-%d %H:%M"
+
+
+def is_valid_exchange_name(exchange: str):
+    if exchange not in ccxt.exchanges:
+        raise ValueError(f"`{exchange}` is an unsupported exchange.")
 
 
 class TaskBase(BaseModel):
@@ -15,7 +21,7 @@ class TaskBase(BaseModel):
     weekday: Optional[Weekday] = None
     day: Optional[int] = None
     time: str
-    exchange: Exchange
+    exchange: str
 
     @validator("amount")
     def amount_should_be_positive_number(cls, v):
@@ -45,6 +51,11 @@ class TaskBase(BaseModel):
             datetime.strptime(v, "%H:%M")
         except ValueError:
             raise ValueError("The time parameter should be in the following format `%H:%M`.")
+        return v
+
+    @validator("exchange")
+    def exchange_validator(cls, v: str):
+        is_valid_exchange_name(v)
         return v
 
 
@@ -91,7 +102,12 @@ class CredentialBase(BaseModel):
 
 
 class Credential(CredentialBase):
-    exchange: Exchange
+    exchange: str
+
+    @validator("exchange")
+    def exchange_validator(cls, v: str):
+        is_valid_exchange_name(v)
+        return v
 
 
 class KeepAlive(BaseModel):

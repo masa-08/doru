@@ -1,6 +1,5 @@
-from typing_extensions import Literal
+from typing_extensions import Literal, TypeAlias
 
-Exchange = Literal["bitbank", "bitflyer"]
 Cycle = Literal["Daily", "Weekly", "Monthly"]
 Pair = Literal["BTC_JPY", "ETH_JPY"]  # TODO: 取引所ごとに異なるペアを提示する
 Status = Literal["Running", "Stopped"]

@@ -10,7 +10,6 @@ from doru.exceptions import MoreThanMaxRunningTasks, TaskDuplicate, TaskNotExist
 from doru.manager.container import Container
 from doru.manager.credential_manager import CredentialManager
 from doru.manager.task_manager import TaskManager
-from doru.types import Exchange
 
 router = APIRouter()
 logger = getLogger(__name__)
@@ -118,7 +117,7 @@ def post_credential(cred: Credential, manager: CredentialManager = Depends(Provi
 
 @router.delete("/credentials/{exchange}")
 @inject
-def delete_credential(exchange: Exchange, manager: CredentialManager = Depends(Provide[Container.credential_manager])):
+def delete_credential(exchange: str, manager: CredentialManager = Depends(Provide[Container.credential_manager])):
     logger.info(f"Removing credential: {{'exchange': {exchange}}}")
     try:
         manager.remove_credential(exchange)

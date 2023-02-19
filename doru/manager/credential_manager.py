@@ -7,13 +7,12 @@ from typing import Dict, Optional
 from doru.api.schema import Credential, CredentialBase
 from doru.envs import DORU_CREDENTIAL_FILE
 from doru.manager.utils import rollback
-from doru.types import Exchange
 
 logger = getLogger(__name__)
 
 
 class CredentialManager:
-    credentials: Dict[Exchange, CredentialBase]
+    credentials: Dict[str, CredentialBase]
 
     def __init__(self, file: str) -> None:
         self.file = Path(file).expanduser()
@@ -45,14 +44,14 @@ class CredentialManager:
         self.credentials[cred.exchange] = CredentialBase(key=cred.key, secret=cred.secret)
         self._write()
 
-    def get_credential(self, exchange: Exchange) -> Optional[Credential]:
+    def get_credential(self, exchange: str) -> Optional[Credential]:
         c = self.credentials.get(exchange)
         if c is None:
             return None
         return Credential(key=c.key, secret=c.secret, exchange=exchange)
 
     @rollback(properties=["credentials"], files=["file"])
-    def remove_credential(self, exchange: Exchange) -> None:
+    def remove_credential(self, exchange: str) -> None:
         del self.credentials[exchange]
         self._write()
 

@@ -2,19 +2,25 @@ import json
 from datetime import datetime
 from typing import List
 
+import ccxt
 import click
 from requests import HTTPError
 from tabulate import tabulate
 from typing_extensions import get_args
 
 from doru.api.client import create_client
-from doru.types import Cycle, Exchange, Pair, Weekday
+from doru.api.schema import is_valid_exchange_name
+from doru.types import Cycle, Pair, Weekday
 
-ENABLE_EXCHANGES = get_args(Exchange)
 ENABLE_CYCLES = get_args(Cycle)
 ENABLE_PAIRS = get_args(Pair)
 WEEKDAY = get_args(Weekday)
 HEADER = ["ID", "Pair", "Amount", "Cycle", "Next Invest Date", "Exchange", "Status"]
+
+
+def validate_exchange(ctx, param, value):
+    is_valid_exchange_name(value)
+    return value
 
 
 def validate_cred(ctx, param, value):
@@ -53,8 +59,9 @@ def cli():
     "--exchange",
     "-e",
     required=True,
-    type=click.Choice(ENABLE_EXCHANGES, case_sensitive=False),
+    type=str,
     prompt=True,
+    callback=validate_exchange,
     help="Select the exchange you will use.",
 )
 @click.option(
@@ -119,7 +126,7 @@ def cli():
     help="Start the task after adding it.",
 )
 def add(
-    exchange: Exchange,
+    exchange: str,
     cycle: Cycle,
     weekday: Weekday,
     day: int,
@@ -255,8 +262,9 @@ def cred():
     "--exchange",
     "-e",
     required=True,
-    type=click.Choice(ENABLE_EXCHANGES, case_sensitive=False),
+    type=str,
     prompt=True,
+    callback=validate_exchange,
     help="Select the exchange you will use.",
 )
 @click.option(
@@ -296,8 +304,9 @@ def cred_add(exchange, key, secret):
     "--exchange",
     "-e",
     required=True,
-    type=click.Choice(ENABLE_EXCHANGES, case_sensitive=False),
+    type=str,
     prompt=True,
+    callback=validate_exchange,
     help="Select the exchange from which you want to remove the credential.",
 )
 def cred_remove(exchange):
