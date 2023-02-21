@@ -3,7 +3,7 @@ from typing import List, Optional
 from doru.api.schema import Credential, KeepAlive, Task, TaskCreate
 from doru.api.session import create_session
 from doru.envs import DORU_SOCK_NAME
-from doru.types import Cycle, Pair, Weekday
+from doru.types import Cycle, Weekday
 
 
 class Client:
@@ -36,7 +36,7 @@ class Client:
         cycle: Cycle,
         time: str,
         amount: int,
-        pair: Pair,
+        pair: str,
         weekday: Optional[Weekday] = None,
         day: Optional[int] = None,
     ) -> Task:
