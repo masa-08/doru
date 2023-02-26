@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from nanoid import generate
+from retry import retry
 
 from doru.api.schema import TIMESTAMP_STRING_FORMAT, Task, TaskCreate
 from doru.envs import DORU_TASK_FILE, DORU_TASK_LIMIT
@@ -21,14 +22,15 @@ from doru.scheduler import ScheduleThreadPool
 logger = getLogger(__name__)
 
 
+@retry(tries=5)
 def do_order(*args, **kwargs) -> None:
     if not kwargs.keys() >= {"exchange_name", "symbol", "amount"}:
         raise DoruError("Requied args are missing. required args: `exchange_name, symbol, amount`")
     exchange = get_exchange(kwargs["exchange_name"])
     order_id = exchange.create_order(kwargs["symbol"], kwargs["amount"])
     if exchange.wait_order_complete(order_id, kwargs["symbol"]) == OrderStatus.OPEN.value:
-        logger.info("canceling")
         exchange.cancel_order(order_id, kwargs["symbol"])
+        raise DoruError(f"Failed to complete order: {{'order_id': {order_id}}}")
 
 
 class TaskManager:
