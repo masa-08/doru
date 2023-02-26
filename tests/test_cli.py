@@ -34,8 +34,8 @@ TEST_DATA: List[Task] = [
         day=28,
         time="23:59",
         exchange="bitflyer",
-        amount=30000,
-        pair="ETH/JPY",
+        amount=0.00001,
+        pair="ETH/BTC",
         status="Stopped",
     ),
 ]
@@ -93,10 +93,12 @@ def test_add_with_less_than_0_amount_fail(exchange, cycle, amount, pair):
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "12.34", "BTC/JPY"]])
-def test_add_with_not_int_amount_fail(exchange, cycle, amount, pair):
+@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitflyer", "Monthly", "0.00001", "ETH/BTC"]])
+def test_add_with_more_than_0_amount_succeed(exchange, cycle, amount, pair, mocker):
+    mocker.patch("doru.api.client.Client.add_task", return_value=TEST_DATA[2])
+    mocker.patch("doru.api.client.Client.start_task", return_value=None)
     result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
-    assert result.exit_code != 0
+    assert result.exit_code == 0
 
 
 @pytest.mark.parametrize("exchange, cycle, amount, pair", [["invalid_exchange", "Daily", "10000", "BTC/JPY"]])
@@ -204,7 +206,7 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
     assert (
         words[0] == TEST_DATA[0].id
         and words[1] == TEST_DATA[0].pair
-        and words[2] == str(TEST_DATA[0].amount)
+        and words[2] == str(int(TEST_DATA[0].amount))
         and words[3] == TEST_DATA[0].cycle
         and " ".join(words[4:6]) == "Not Scheduled"
         and words[6] == TEST_DATA[0].exchange
@@ -215,11 +217,22 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
     assert (
         words[0] == TEST_DATA[1].id
         and words[1] == TEST_DATA[1].pair
-        and words[2] == str(TEST_DATA[1].amount)
+        and words[2] == str(int(TEST_DATA[1].amount))
         and words[3] == TEST_DATA[1].cycle
         and " ".join(words[4:6]) == TEST_DATA[1].next_run
         and words[6] == TEST_DATA[1].exchange
         and words[7] == TEST_DATA[1].status
+    )
+
+    words = lines[4].split()
+    assert (
+        words[0] == TEST_DATA[2].id
+        and words[1] == TEST_DATA[2].pair
+        and words[2] == str(TEST_DATA[2].amount)
+        and words[3] == TEST_DATA[2].cycle
+        and " ".join(words[4:6]) == "Not Scheduled"
+        and words[6] == TEST_DATA[2].exchange
+        and words[7] == TEST_DATA[2].status
     )
 
 

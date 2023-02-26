@@ -35,7 +35,7 @@ class Client:
         exchange: str,
         cycle: Cycle,
         time: str,
-        amount: int,
+        amount: float,
         pair: str,
         weekday: Optional[Weekday] = None,
         day: Optional[int] = None,

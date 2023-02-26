@@ -112,7 +112,10 @@ def cli():
     prompt=True,
     default="Sun",
     show_default=True,
-    help="Select the day of the week you will purchase crypto. This option is enabled when the interval is set to `week`.",
+    help=(
+        "Select the day of the week you will purchase crypto. \
+This option is enabled when the interval is set to `week`."
+    ),
 )
 @click.option(
     "--day",
@@ -121,7 +124,10 @@ def cli():
     prompt=True,
     default=1,
     show_default=True,
-    help="Enter the day in each month on which you will purchase crypto. This option is enabled when the interval is set to `month`.",
+    help=(
+        "Enter the day in each month on which you will purchase crypto. \
+This option is enabled when the interval is set to `month`."
+    ),
 )
 @click.option(
     "--time",
@@ -137,9 +143,9 @@ def cli():
     "--amount",
     "-a",
     required=True,
-    type=click.IntRange(min=1),
+    type=click.FloatRange(min=0, min_open=True),
     prompt=True,
-    help="Enter the amount per request. (unit: yen)",
+    help="Enter the amount per request.",
 )
 @click.option(
     "--start",
@@ -155,7 +161,7 @@ def add(
     weekday: Weekday,
     day: int,
     time: datetime,
-    amount: int,
+    amount: float,
     pair: str,
     start: bool,
 ):

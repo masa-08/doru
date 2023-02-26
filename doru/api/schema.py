@@ -25,7 +25,7 @@ def is_valid_symbol(exchange: str, symbol: str):
 
 class TaskBase(BaseModel):
     pair: str
-    amount: int
+    amount: float
     cycle: Cycle
     weekday: Optional[Weekday] = None
     day: Optional[int] = None
