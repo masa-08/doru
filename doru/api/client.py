@@ -3,7 +3,7 @@ from typing import List, Optional
 from doru.api.schema import Credential, KeepAlive, Task, TaskCreate
 from doru.api.session import create_session
 from doru.envs import DORU_SOCK_NAME
-from doru.types import Cycle, Exchange, Pair, Weekday
+from doru.types import Cycle, Weekday
 
 
 class Client:
@@ -32,11 +32,11 @@ class Client:
 
     def add_task(
         self,
-        exchange: Exchange,
+        exchange: str,
         cycle: Cycle,
         time: str,
-        amount: int,
-        pair: Pair,
+        amount: float,
+        pair: str,
         weekday: Optional[Weekday] = None,
         day: Optional[int] = None,
     ) -> Task:
@@ -80,12 +80,12 @@ class Client:
         for task in tasks:
             self.stop_task(task.id)
 
-    def add_cred(self, exchange: Exchange, key: str, secret: str) -> None:
+    def add_cred(self, exchange: str, key: str, secret: str) -> None:
         cred = Credential(exchange=exchange, key=key, secret=secret)
         res = self.session.post("credentials", data=cred.json())
         res.raise_for_status()
 
-    def remove_cred(self, exchange: Exchange) -> None:
+    def remove_cred(self, exchange: str) -> None:
         res = self.session.delete(f"credentials/{exchange}")
         res.raise_for_status()
 

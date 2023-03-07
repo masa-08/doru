@@ -11,7 +11,7 @@ from doru.manager.task_manager import TaskManager, create_task_manager
 TASK_DATA = {
     "1": {
         "id": "1",
-        "pair": "BTC_JPY",
+        "pair": "BTC/JPY",
         "amount": 10000,
         "cycle": "Daily",
         "time": "00:00",
@@ -21,7 +21,7 @@ TASK_DATA = {
     },
     "2": {
         "id": "2",
-        "pair": "ETH_JPY",
+        "pair": "ETH/JPY",
         "amount": 1000,
         "cycle": "Weekly",
         "weekday": "Mon",
@@ -81,9 +81,9 @@ def test_get_tasks_succeed(task_manager, tasks, mocker):
 @pytest.mark.parametrize(
     "new_task",
     [
-        {"pair": "ETH_JPY", "amount": 1, "cycle": "Daily", "time": "00:00", "exchange": "bitbank"},
+        {"pair": "ETH/JPY", "amount": 1, "cycle": "Daily", "time": "00:00", "exchange": "bitbank"},
         {
-            "pair": "ETH_JPY",
+            "pair": "ETH/JPY",
             "amount": 1,
             "cycle": "Daily",
             "time": "00:00",
@@ -117,19 +117,19 @@ def test_post_task_with_valid_body_succeed(task_manager, new_task):
         # invalid pair
         {"pair": "INVALID", "amount": 1, "cycle": "1Monthly", "exchange": "bitbank"},
         # without amount
-        {"pair": "ETH_JPY", "cycle": "1Monthly", "exchange": "bitbank"},
+        {"pair": "ETH/JPY", "cycle": "1Monthly", "exchange": "bitbank"},
         # invalid amount
-        {"pair": "ETH_JPY", "amount": 0, "cycle": "1Monthly", "exchange": "bitbank"},
+        {"pair": "ETH/JPY", "amount": 0, "cycle": "1Monthly", "exchange": "bitbank"},
         # invalid amount
-        {"pair": "ETH_JPY", "amount": "invalid", "cycle": "1Monthly", "exchange": "bitbank"},
+        {"pair": "ETH/JPY", "amount": "invalid", "cycle": "1Monthly", "exchange": "bitbank"},
         # without cycle
-        {"pair": "ETH_JPY", "amount": 1, "exchange": "bitbank"},
+        {"pair": "ETH/JPY", "amount": 1, "exchange": "bitbank"},
         # invalid cycle
-        {"pair": "ETH_JPY", "amount": 1, "cycle": "invalid", "exchange": "bitbank"},
+        {"pair": "ETH/JPY", "amount": 1, "cycle": "invalid", "exchange": "bitbank"},
         # without exchange
-        {"pair": "ETH_JPY", "amount": 1, "cycle": "1Monthly"},
+        {"pair": "ETH/JPY", "amount": 1, "cycle": "1Monthly"},
         # invalid exchange
-        {"pair": "ETH_JPY", "amount": 1, "cycle": "1Monthly", "exchange": "invalid"},
+        {"pair": "ETH/JPY", "amount": 1, "cycle": "1Monthly", "exchange": "invalid"},
     ],
 )
 @pytest.mark.parametrize("tasks", [TASK_DATA])
@@ -142,7 +142,7 @@ def test_post_task_with_invalid_body_fail(task_manager, new_task):
 
 @pytest.mark.parametrize(
     "new_task",
-    [{"pair": "ETH_JPY", "amount": 1, "cycle": "Daily", "time": "00:00", "exchange": "bitbank"}],
+    [{"pair": "ETH/JPY", "amount": 1, "cycle": "Daily", "time": "00:00", "exchange": "bitbank"}],
 )
 @pytest.mark.parametrize("tasks", [TASK_DATA])
 def test_post_task_with_unexpected_error_fail(task_manager, new_task, mocker):

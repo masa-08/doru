@@ -8,15 +8,44 @@ from tabulate import tabulate
 from typing_extensions import get_args
 
 from doru.api.client import create_client
-from doru.types import Cycle, Exchange, Pair, Weekday
+from doru.api.schema import is_valid_exchange_name, is_valid_symbol
+from doru.types import Cycle, Weekday
 
-ENABLE_EXCHANGES = get_args(Exchange)
 ENABLE_CYCLES = get_args(Cycle)
-ENABLE_PAIRS = get_args(Pair)
 WEEKDAY = get_args(Weekday)
 HEADER = ["ID", "Pair", "Amount", "Cycle", "Next Invest Date", "Exchange", "Status"]
 
 
+def validate_exchange(ctx, param, value):
+    try:
+        is_valid_exchange_name(value)
+    except Exception as e:
+        raise click.ClickException(str(e))
+    return value
+
+
+def validate_exchange_symbol(ctx: click.Context, param: click.Option, value):
+    try:
+        if param.name == "exchange":
+            is_valid_exchange_name(value)
+            # If pair is specified before exchange,
+            # validate pair here because pair is not checked.
+            if "pair" in ctx.params.keys():
+                is_valid_symbol(value, ctx.params["pair"])
+        elif param.name == "pair":
+            # If pair is specified before exchange,
+            # pair will be validated during the exchange validation
+            if "exchange" not in ctx.params.keys():
+                return value
+            is_valid_symbol(ctx.params["exchange"], value)
+        else:
+            raise ValueError("Invalid param name.")
+    except Exception as e:
+        raise click.ClickException(str(e))
+    return value
+
+
+# TODO: wrap with ClickException
 def validate_cred(ctx, param, value):
     if len(value) == 0:
         raise Exception("Length of API key and secret should be more than 0.")
@@ -53,9 +82,19 @@ def cli():
     "--exchange",
     "-e",
     required=True,
-    type=click.Choice(ENABLE_EXCHANGES, case_sensitive=False),
+    type=str,
     prompt=True,
-    help="Select the exchange you will use.",
+    callback=validate_exchange_symbol,
+    help="Enter the exchange you will use.",
+)
+@click.option(
+    "--pair",
+    "-p",
+    required=True,
+    type=str,
+    prompt=True,
+    callback=validate_exchange_symbol,
+    help="Enter the pair you want to buy.",  # TODO: pair => symbol
 )
 @click.option(
     "--cycle",
@@ -73,7 +112,10 @@ def cli():
     prompt=True,
     default="Sun",
     show_default=True,
-    help="Select the day of the week you will purchase crypto. This option is enabled when the interval is set to `week`.",
+    help=(
+        "Select the day of the week you will purchase crypto. \
+This option is enabled when the interval is set to `week`."
+    ),
 )
 @click.option(
     "--day",
@@ -82,7 +124,10 @@ def cli():
     prompt=True,
     default=1,
     show_default=True,
-    help="Enter the day in each month on which you will purchase crypto. This option is enabled when the interval is set to `month`.",
+    help=(
+        "Enter the day in each month on which you will purchase crypto. \
+This option is enabled when the interval is set to `month`."
+    ),
 )
 @click.option(
     "--time",
@@ -98,17 +143,9 @@ def cli():
     "--amount",
     "-a",
     required=True,
-    type=click.IntRange(min=1),
+    type=click.FloatRange(min=0, min_open=True),
     prompt=True,
-    help="Enter the amount per request. (unit: yen)",
-)
-@click.option(
-    "--pair",
-    "-p",
-    required=True,
-    type=click.Choice(ENABLE_PAIRS, case_sensitive=False),
-    prompt=True,
-    help="Select the pair you want to buy.",
+    help="Enter the amount per request.",
 )
 @click.option(
     "--start",
@@ -119,13 +156,13 @@ def cli():
     help="Start the task after adding it.",
 )
 def add(
-    exchange: Exchange,
+    exchange: str,
     cycle: Cycle,
     weekday: Weekday,
     day: int,
     time: datetime,
-    amount: int,
-    pair: Pair,
+    amount: float,
+    pair: str,
     start: bool,
 ):
     manager = create_client()
@@ -255,8 +292,9 @@ def cred():
     "--exchange",
     "-e",
     required=True,
-    type=click.Choice(ENABLE_EXCHANGES, case_sensitive=False),
+    type=str,
     prompt=True,
+    callback=validate_exchange,
     help="Select the exchange you will use.",
 )
 @click.option(
@@ -296,8 +334,9 @@ def cred_add(exchange, key, secret):
     "--exchange",
     "-e",
     required=True,
-    type=click.Choice(ENABLE_EXCHANGES, case_sensitive=False),
+    type=str,
     prompt=True,
+    callback=validate_exchange,
     help="Select the exchange from which you want to remove the credential.",
 )
 def cred_remove(exchange):

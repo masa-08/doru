@@ -285,30 +285,30 @@ class ScheduleThreadPool:
     ) -> ScheduleThread:
         scheduler = SafeScheduler()
         if cycle == "Daily":
-            scheduler.every().day.at(time).do(func, args=args, kwargs=kwargs)
+            scheduler.every().day.at(time).do(func, *args, **kwargs)
         elif cycle == "Weekly":
             if weekday is None:
                 raise DoruError("The weekday parameter should not be None in the weekly schedule thread.")
 
             if weekday == "Sun":
-                scheduler.every().sunday.at(time).do(func, args=args, kwargs=kwargs)
+                scheduler.every().sunday.at(time).do(func, *args, **kwargs)
             elif weekday == "Mon":
-                scheduler.every().monday.at(time).do(func, args=args, kwargs=kwargs)
+                scheduler.every().monday.at(time).do(func, *args, **kwargs)
             elif weekday == "Tue":
-                scheduler.every().tuesday.at(time).do(func, args=args, kwargs=kwargs)
+                scheduler.every().tuesday.at(time).do(func, *args, **kwargs)
             elif weekday == "Wed":
-                scheduler.every().wednesday.at(time).do(func, args=args, kwargs=kwargs)
+                scheduler.every().wednesday.at(time).do(func, *args, **kwargs)
             elif weekday == "Thu":
-                scheduler.every().thursday.at(time).do(func, args=args, kwargs=kwargs)
+                scheduler.every().thursday.at(time).do(func, *args, **kwargs)
             elif weekday == "Fri":
-                scheduler.every().friday.at(time).do(func, args=args, kwargs=kwargs)
+                scheduler.every().friday.at(time).do(func, *args, **kwargs)
             elif weekday == "Sat":
-                scheduler.every().saturday.at(time).do(func, args=args, kwargs=kwargs)
+                scheduler.every().saturday.at(time).do(func, *args, **kwargs)
         elif cycle == "Monthly":
             if day is None:
                 raise DoruError("The day parameter should not be None in the monthly schedule thread.")
 
-            scheduler.every().month.date(str(day)).at(time).do(func, args=args, kwargs=kwargs)
+            scheduler.every().month.date(str(day)).at(time).do(func, *args, **kwargs)
         return ScheduleThread(scheduler, daemon=True)
 
     @property

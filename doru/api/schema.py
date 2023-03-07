@@ -1,24 +1,39 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, validator
+import ccxt
+from pydantic import BaseModel, root_validator, validator
 
-from doru.types import Cycle, Exchange, Pair, Status, Weekday
+from doru.types import Cycle, Status, Weekday
 
 TIMESTAMP_STRING_FORMAT = "%Y-%m-%d %H:%M"
 
 
+def is_valid_exchange_name(exchange: str):
+    if exchange not in ccxt.exchanges:
+        raise ValueError(f"`{exchange}` is an unsupported exchange.\n\nSupported exchanges:\n{ccxt.exchanges}")
+
+
+def is_valid_symbol(exchange: str, symbol: str):
+    is_valid_exchange_name(exchange)
+    ex: ccxt.Exchange = getattr(ccxt, exchange, None)()  # type:ignore[misc]
+    markets = ex.fetch_markets()
+    symbols = [m["symbol"] for m in markets if m["spot"]]  # return only spot type symbols
+    if symbol not in symbols:
+        raise ValueError(f"`{symbol}` is not supported on {exchange}.\n\nSupported symbols:\n{set(symbols)}")
+
+
 class TaskBase(BaseModel):
-    pair: Pair
-    amount: int
+    pair: str
+    amount: float
     cycle: Cycle
     weekday: Optional[Weekday] = None
     day: Optional[int] = None
     time: str
-    exchange: Exchange
+    exchange: str
 
     @validator("amount")
-    def amount_should_be_positive_number(cls, v):
+    def amount_should_be_positive_number(cls, v, values):
         if v <= 0:
             raise ValueError("Amount should be positive value.")
         return v
@@ -46,6 +61,16 @@ class TaskBase(BaseModel):
         except ValueError:
             raise ValueError("The time parameter should be in the following format `%H:%M`.")
         return v
+
+    @root_validator
+    def exchange_symbol_validator(cls, values):
+        if "exchange" not in values:
+            raise ValueError("`exchange` is required")
+        if "pair" not in values:
+            raise ValueError("`pair` is required")
+        is_valid_exchange_name(values["exchange"])
+        is_valid_symbol(values["exchange"], values["pair"])
+        return values
 
 
 class TaskCreate(TaskBase):
@@ -91,7 +116,12 @@ class CredentialBase(BaseModel):
 
 
 class Credential(CredentialBase):
-    exchange: Exchange
+    exchange: str
+
+    @validator("exchange")
+    def exchange_validator(cls, v: str):
+        is_valid_exchange_name(v)
+        return v
 
 
 class KeepAlive(BaseModel):

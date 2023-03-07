@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from nanoid import generate
+from retry import retry
 
 from doru.api.schema import TIMESTAMP_STRING_FORMAT, Task, TaskCreate
 from doru.envs import DORU_TASK_FILE, DORU_TASK_LIMIT
@@ -14,14 +15,22 @@ from doru.exceptions import (
     TaskDuplicate,
     TaskNotExist,
 )
+from doru.exchange import OrderStatus, get_exchange
 from doru.manager.utils import rollback
 from doru.scheduler import ScheduleThreadPool
 
 logger = getLogger(__name__)
 
 
-def dummy_func(*args, **kwargs) -> None:
-    pass
+@retry(tries=5)
+def do_order(*args, **kwargs) -> None:
+    if not kwargs.keys() >= {"exchange_name", "symbol", "amount"}:
+        raise DoruError("Requied args are missing. required args: `exchange_name, symbol, amount`")
+    exchange = get_exchange(kwargs["exchange_name"])
+    order_id = exchange.create_order(kwargs["symbol"], kwargs["amount"])
+    if exchange.wait_order_complete(order_id, kwargs["symbol"]) == OrderStatus.OPEN.value:
+        exchange.cancel_order(order_id, kwargs["symbol"])
+        raise DoruError(f"Failed to complete order: {{'order_id': {order_id}}}")
 
 
 class TaskManager:
@@ -101,9 +110,16 @@ class TaskManager:
         self._write()
 
         try:
-            # TODO: replace dummy_func after inplementing of crypto trading function.
             self.pool.submit(
-                key=id, func=dummy_func, cycle=task.cycle, weekday=task.weekday, day=task.day, time=task.time
+                key=id,
+                func=do_order,
+                cycle=task.cycle,
+                weekday=task.weekday,
+                day=task.day,
+                time=task.time,
+                exchange_name=task.exchange,
+                symbol=task.pair,
+                amount=task.amount,
             )
         except DoruError:
             raise TaskDuplicate(id)

@@ -10,7 +10,7 @@ from doru.manager.task_manager import TaskManager, create_task_manager
 TEST_DATA = {
     "1": {
         "id": "1",
-        "pair": "BTC_JPY",
+        "pair": "BTC/JPY",
         "amount": 10000,
         "cycle": "Daily",
         "time": "00:00",
@@ -20,7 +20,7 @@ TEST_DATA = {
     },
     "2": {
         "id": "2",
-        "pair": "ETH_JPY",
+        "pair": "ETH/JPY",
         "amount": 1000,
         "cycle": "Weekly",
         "weekday": "Mon",
@@ -31,7 +31,7 @@ TEST_DATA = {
     },
     "3": {
         "id": "3",
-        "pair": "ETH_JPY",
+        "pair": "ETH/JPY",
         "amount": 100,
         "cycle": "Monthly",
         "day": 28,
@@ -96,7 +96,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         # without "id"
         {
             "1": {
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Daily",
                 "time": "00:00",
@@ -108,7 +108,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Daily",
                 "time": "00:00",
@@ -143,7 +143,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "cycle": "Daily",
                 "time": "00:00",
                 "exchange": "bitbank",
@@ -154,7 +154,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 0,
                 "cycle": "Daily",
                 "time": "00:00",
@@ -166,7 +166,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": "",
                 "cycle": "Daily",
                 "time": "00:00",
@@ -175,12 +175,12 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
             }
         },
         # without "cycle"
-        {"1": {"id": "1", "pair": "BTC_JPY", "amount": 10000, "exchange": "bitbank", "status": "Running"}},
+        {"1": {"id": "1", "pair": "BTC/JPY", "amount": 10000, "exchange": "bitbank", "status": "Running"}},
         # invalid "cycle"
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "min",
                 "time": "00:00",
@@ -192,7 +192,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Weekly",
                 "time": "00:00",
@@ -204,7 +204,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Weekly",
                 "weekday": "Invalid",
@@ -217,7 +217,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Monthly",
                 "time": "00:00",
@@ -229,7 +229,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Monthly",
                 "day": 29,
@@ -242,7 +242,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Daily",
                 "exchange": "bitbank",
@@ -253,7 +253,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Daily",
                 "time": "24:00",
@@ -265,7 +265,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Daily",
                 "time": "00:00",
@@ -276,7 +276,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Daily",
                 "time": "00:00",
@@ -288,7 +288,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Daily",
                 "time": "00:00",
@@ -299,7 +299,7 @@ def test_init_with_invalid_json_file_raise_exception(tmpdir):
         {
             "1": {
                 "id": "1",
-                "pair": "BTC_JPY",
+                "pair": "BTC/JPY",
                 "amount": 10000,
                 "cycle": "Daily",
                 "time": "00:00",
@@ -333,7 +333,7 @@ def test_get_tasks_succeed(task_manager: TaskManager, tasks, mocker):
 
 @pytest.mark.parametrize("tasks", [TEST_DATA])
 @pytest.mark.parametrize(
-    "new_task", [TaskCreate(pair="ETH_JPY", amount=1, cycle="Daily", time="00:00", exchange="bitbank")]
+    "new_task", [TaskCreate(pair="ETH/JPY", amount=1, cycle="Daily", time="00:00", exchange="bitbank")]
 )
 def test_add_task_with_valid_task_succeed(task_manager: TaskManager, tasks, new_task: TaskCreate):
     t = task_manager.add_task(new_task)
@@ -353,7 +353,7 @@ def test_add_task_with_valid_task_succeed(task_manager: TaskManager, tasks, new_
 
 @pytest.mark.parametrize("tasks", [TEST_DATA])
 @pytest.mark.parametrize(
-    "new_task", [TaskCreate(pair="ETH_JPY", amount=1, cycle="Daily", time="00:00", exchange="bitbank")]
+    "new_task", [TaskCreate(pair="ETH/JPY", amount=1, cycle="Daily", time="00:00", exchange="bitbank")]
 )
 def test_add_task_with_exception_on_writing_raise_exception(task_manager: TaskManager, tasks, new_task, mocker):
     mocker.patch("doru.manager.task_manager.TaskManager._write", side_effect=Exception)
