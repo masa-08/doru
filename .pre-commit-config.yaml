@@ -1,0 +1,45 @@
+repos:
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.1.1
+    hooks:
+    - id: mypy
+      args:
+        - --check-untyped-defs
+        - --disallow-any-generics
+        - --disallow-untyped-calls
+        - --ignore-missing-imports
+        - --strict-equality
+        - --strict-optional
+        - --warn-no-return
+        - --warn-redundant-casts
+        - --warn-unreachable
+        - --warn-unused-configs
+        - --warn-unused-ignores
+      additional_dependencies: [types-requests, types-tabulate, types-retry]
+
+  - repo: https://github.com/psf/black
+    rev: 23.1.0
+    hooks:
+      - id: black
+        args: [--line-length, "119"]
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.11.5
+    hooks:
+      - id: isort
+        args: [--profile, "black", --atomic]
+
+  - repo: https://github.com/PyCQA/flake8
+    rev: 5.0.4
+    hooks:
+      - id: flake8
+        args: [--ignore, "E501,W503"]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-toml
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: trailing-whitespace
