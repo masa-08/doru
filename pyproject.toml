@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "doru"
 version = "0.1.0"
-description = "Bot to accumulate crypto on centralized exchanges using dollar-cost averaging."
+description = "Command line tool to accumulate crypto on centralized exchanges using dollar-cost averaging."
 authors = ["Masaharu Shimizu <masaharu.shimizu08@gmail.com>"]
 
 [tool.poetry.dependencies]
@@ -21,7 +21,7 @@ backoff = "^2.2.1"
 ccxt = "^2.8.37"
 retry = "^0.9.2"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^5.2"
 mypy = "^0.991"
 black = "^22.10.0"
@@ -35,8 +35,6 @@ types-tabulate = "^0.9.0"
 httpx = "^0.23.3"
 types-requests = "^2.28.11"
 pytest-freezegun = "^0.4.2"
-
-[tool.poetry.group.dev.dependencies]
 types-retry = "^0.9.9.2"
 
 [tool.isort]
