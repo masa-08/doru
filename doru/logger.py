@@ -1,6 +1,6 @@
+import os
 from logging import config
 from pathlib import Path
-import os
 
 LOGGER_CONFIG = {
     "version": 1,

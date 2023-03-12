@@ -18,7 +18,7 @@ if __name__ == "__main__":
         click.echo("The background process of this application is starting up...")
         try:
             asyncio.run(run())
-        except asyncio.TimeoutError as e:
+        except asyncio.TimeoutError:
             click.echo("The startup of the background process terminated due to timeout...")
             exit(1)
         except Exception:
