@@ -17,7 +17,7 @@ class Client:
         return [
             Task(
                 id=d["id"],
-                pair=d["pair"],
+                symbol=d["symbol"],
                 amount=d["amount"],
                 cycle=d["cycle"],
                 weekday=d.get("weekday"),
@@ -36,19 +36,19 @@ class Client:
         cycle: Cycle,
         time: str,
         amount: float,
-        pair: str,
+        symbol: str,
         weekday: Optional[Weekday] = None,
         day: Optional[int] = None,
     ) -> Task:
         task = TaskCreate(
-            pair=pair, amount=amount, cycle=cycle, weekday=weekday, day=day, time=time, exchange=exchange
+            symbol=symbol, amount=amount, cycle=cycle, weekday=weekday, day=day, time=time, exchange=exchange
         )
         res = self.session.post("tasks", data=task.json())
         res.raise_for_status()
         data = res.json()
         return Task(
             id=data["id"],
-            pair=data["pair"],
+            symbol=data["symbol"],
             amount=data["amount"],
             cycle=data["cycle"],
             weekday=data.get("weekday"),

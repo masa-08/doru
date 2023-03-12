@@ -14,7 +14,7 @@ TEST_DATA: List[Task] = [
         cycle="Daily",
         time="00:00",
         amount=10000,
-        pair="BTC/JPY",
+        symbol="BTC/JPY",
         status="Stopped",
     ),
     Task(
@@ -24,7 +24,7 @@ TEST_DATA: List[Task] = [
         time="23:59",
         exchange="bitflyer",
         amount=20000,
-        pair="ETH/JPY",
+        symbol="ETH/JPY",
         status="Running",
         next_run="2022-01-01 00:00",
     ),
@@ -35,87 +35,91 @@ TEST_DATA: List[Task] = [
         time="23:59",
         exchange="bitflyer",
         amount=0.00001,
-        pair="ETH/BTC",
+        symbol="ETH/BTC",
         status="Stopped",
     ),
 ]
 
 
-@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "1", "BTC/JPY"]])
-def test_add_with_valid_amount_succeed(exchange, cycle, amount, pair, mocker):
+@pytest.mark.parametrize("exchange, cycle, amount, symbol", [["bitbank", "Daily", "1", "BTC/JPY"]])
+def test_add_with_valid_amount_succeed(exchange, cycle, amount, symbol, mocker):
     mocker.patch("doru.api.client.Client.add_task", return_value=TEST_DATA[1])
     mocker.patch("doru.api.client.Client.start_task", return_value=None)
     spy = mocker.spy(Client, "start_task")
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-s", symbol])
     assert result.exit_code == 0
     assert spy.call_count == 1
 
 
-@pytest.mark.parametrize("exchange, cycle, amount, pair, start", [["bitbank", "Daily", "1", "BTC/JPY", "False"]])
-def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, cycle, amount, pair, start, mocker):
+@pytest.mark.parametrize("exchange, cycle, amount, symbol, start", [["bitbank", "Daily", "1", "BTC/JPY", "False"]])
+def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, cycle, amount, symbol, start, mocker):
     mocker.patch("doru.api.client.Client.add_task", return_value=TEST_DATA[1])
     spy = mocker.spy(Client, "start_task")
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair, "-s", start])
+    result = CliRunner().invoke(
+        cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-s", symbol, "--start", start]
+    )
     assert result.exit_code == 0
     assert spy.call_count == 0
 
 
-@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "1", "BTC/JPY"]])
-def test_add_fail_when_task_daemon_manager_raise_exception(exchange, cycle, amount, pair, mocker):
+@pytest.mark.parametrize("exchange, cycle, amount, symbol", [["bitbank", "Daily", "1", "BTC/JPY"]])
+def test_add_fail_when_task_daemon_manager_raise_exception(exchange, cycle, amount, symbol, mocker):
     mocker.patch("doru.api.client.Client.add_task", side_effect=Exception)
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-s", symbol])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, cycle, weekday, amount, pair", [["bitbank", "Weekly", "invalid", "1", "BTC/JPY"]])
-def test_add_weekly_task_with_invalid_weekday_option_fail(exchange, cycle, weekday, amount, pair):
+@pytest.mark.parametrize(
+    "exchange, cycle, weekday, amount, symbol", [["bitbank", "Weekly", "invalid", "1", "BTC/JPY"]]
+)
+def test_add_weekly_task_with_invalid_weekday_option_fail(exchange, cycle, weekday, amount, symbol):
     result = CliRunner().invoke(
-        cli, args=["add", "-e", exchange, "-c", cycle, "-w", weekday, "-a", amount, "-p", pair]
+        cli, args=["add", "-e", exchange, "-c", cycle, "-w", weekday, "-a", amount, "-s", symbol]
     )
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, cycle, day, amount, pair", [["bitbank", "Monthly", "29", "1", "BTC/JPY"]])
-def test_add_monthly_task_with_invalid_day_option_fail(exchange, cycle, day, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-d", day, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, day, amount, symbol", [["bitbank", "Monthly", "29", "1", "BTC/JPY"]])
+def test_add_monthly_task_with_invalid_day_option_fail(exchange, cycle, day, amount, symbol):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-d", day, "-a", amount, "-s", symbol])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, cycle, time, amount, pair", [["bitbank", "Daily", "24:00", "1", "BTC/JPY"]])
-def test_add_task_with_invalid_time_option_fail(exchange, cycle, time, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-t", time, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, time, amount, symbol", [["bitbank", "Daily", "24:00", "1", "BTC/JPY"]])
+def test_add_task_with_invalid_time_option_fail(exchange, cycle, time, amount, symbol):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-t", time, "-a", amount, "-s", symbol])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "0", "BTC/JPY"]])
-def test_add_with_less_than_0_amount_fail(exchange, cycle, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, amount, symbol", [["bitbank", "Daily", "0", "BTC/JPY"]])
+def test_add_with_less_than_0_amount_fail(exchange, cycle, amount, symbol):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-s", symbol])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitflyer", "Monthly", "0.00001", "ETH/BTC"]])
-def test_add_with_more_than_0_amount_succeed(exchange, cycle, amount, pair, mocker):
+@pytest.mark.parametrize("exchange, cycle, amount, symbol", [["bitflyer", "Monthly", "0.00001", "ETH/BTC"]])
+def test_add_with_more_than_0_amount_succeed(exchange, cycle, amount, symbol, mocker):
     mocker.patch("doru.api.client.Client.add_task", return_value=TEST_DATA[2])
     mocker.patch("doru.api.client.Client.start_task", return_value=None)
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-s", symbol])
     assert result.exit_code == 0
 
 
-@pytest.mark.parametrize("exchange, cycle, amount, pair", [["invalid_exchange", "Daily", "10000", "BTC/JPY"]])
-def test_add_with_invalid_exchange_fail(exchange, cycle, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, amount, symbol", [["invalid_exchange", "Daily", "10000", "BTC/JPY"]])
+def test_add_with_invalid_exchange_fail(exchange, cycle, amount, symbol):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-s", symbol])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "invalid_cycle", "10000", "BTC/JPY"]])
-def test_add_with_invalid_cycle_fail(exchange, cycle, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, amount, symbol", [["bitbank", "invalid_cycle", "10000", "BTC/JPY"]])
+def test_add_with_invalid_cycle_fail(exchange, cycle, amount, symbol):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-s", symbol])
     assert result.exit_code != 0
 
 
-@pytest.mark.parametrize("exchange, cycle, amount, pair", [["bitbank", "Daily", "10000", "INVALID_PAIR"]])
-def test_add_with_invalid_pair_fail(exchange, cycle, amount, pair):
-    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-p", pair])
+@pytest.mark.parametrize("exchange, cycle, amount, symbol", [["bitbank", "Daily", "10000", "INVALID_symbol"]])
+def test_add_with_invalid_symbol_fail(exchange, cycle, amount, symbol):
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-s", symbol])
     assert result.exit_code != 0
 
 
@@ -194,7 +198,7 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
     header = lines[0].split()
     assert (
         header[0] == "ID"
-        and header[1] == "Pair"
+        and header[1] == "Symbol"
         and header[2] == "Amount"
         and header[3] == "Cycle"
         and " ".join(header[4:7]) == "Next Invest Date"
@@ -205,7 +209,7 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
     words = lines[2].split()
     assert (
         words[0] == TEST_DATA[0].id
-        and words[1] == TEST_DATA[0].pair
+        and words[1] == TEST_DATA[0].symbol
         and words[2] == str(int(TEST_DATA[0].amount))
         and words[3] == TEST_DATA[0].cycle
         and " ".join(words[4:6]) == "Not Scheduled"
@@ -216,7 +220,7 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
     words = lines[3].split()
     assert (
         words[0] == TEST_DATA[1].id
-        and words[1] == TEST_DATA[1].pair
+        and words[1] == TEST_DATA[1].symbol
         and words[2] == str(int(TEST_DATA[1].amount))
         and words[3] == TEST_DATA[1].cycle
         and " ".join(words[4:6]) == TEST_DATA[1].next_run
@@ -227,7 +231,7 @@ def test_list_with_one_or_more_tasks_succeed(mocker):
     words = lines[4].split()
     assert (
         words[0] == TEST_DATA[2].id
-        and words[1] == TEST_DATA[2].pair
+        and words[1] == TEST_DATA[2].symbol
         and words[2] == str(TEST_DATA[2].amount)
         and words[3] == TEST_DATA[2].cycle
         and " ".join(words[4:6]) == "Not Scheduled"
@@ -244,7 +248,7 @@ def test_list_with_no_task_succeed(mocker):
     header = lines[0].split()
     assert (
         header[0] == "ID"
-        and header[1] == "Pair"
+        and header[1] == "Symbol"
         and header[2] == "Amount"
         and header[3] == "Cycle"
         and " ".join(header[4:7]) == "Next Invest Date"

@@ -80,7 +80,7 @@ class TaskManager:
     def add_task(self, task: TaskCreate) -> Task:
         id = generate(size=self._size, alphabet=self._alphabet)
         new_task = Task(
-            pair=task.pair,
+            symbol=task.symbol,
             amount=task.amount,
             cycle=task.cycle,
             weekday=task.weekday,
@@ -118,7 +118,7 @@ class TaskManager:
                 day=task.day,
                 time=task.time,
                 exchange_name=task.exchange,
-                symbol=task.pair,
+                symbol=task.symbol,
                 amount=task.amount,
             )
         except DoruError:

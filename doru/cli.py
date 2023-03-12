@@ -13,7 +13,7 @@ from doru.types import Cycle, Weekday
 
 ENABLE_CYCLES = get_args(Cycle)
 WEEKDAY = get_args(Weekday)
-HEADER = ["ID", "Pair", "Amount", "Cycle", "Next Invest Date", "Exchange", "Status"]
+HEADER = ["ID", "Symbol", "Amount", "Cycle", "Next Invest Date", "Exchange", "Status"]
 
 
 def validate_exchange(ctx, param, value):
@@ -28,13 +28,13 @@ def validate_exchange_symbol(ctx: click.Context, param: click.Option, value):
     try:
         if param.name == "exchange":
             is_valid_exchange_name(value)
-            # If pair is specified before exchange,
-            # validate pair here because pair is not checked.
-            if "pair" in ctx.params.keys():
-                is_valid_symbol(value, ctx.params["pair"])
-        elif param.name == "pair":
-            # If pair is specified before exchange,
-            # pair will be validated during the exchange validation
+            # If symbol is specified before exchange,
+            # validate symbol here because symbol is not checked.
+            if "symbol" in ctx.params.keys():
+                is_valid_symbol(value, ctx.params["symbol"])
+        elif param.name == "symbol":
+            # If symbol is specified before exchange,
+            # symbol will be validated during the exchange validation
             if "exchange" not in ctx.params.keys():
                 return value
             is_valid_symbol(ctx.params["exchange"], value)
@@ -88,13 +88,13 @@ def cli():
     help="Enter the exchange you will use.",
 )
 @click.option(
-    "--pair",
-    "-p",
+    "--symbol",
+    "-s",
     required=True,
     type=str,
     prompt=True,
     callback=validate_exchange_symbol,
-    help="Enter the pair you want to buy.",  # TODO: pair => symbol
+    help="Enter the symbol you want to buy.",
 )
 @click.option(
     "--cycle",
@@ -149,7 +149,6 @@ This option is enabled when the interval is set to `month`."
 )
 @click.option(
     "--start",
-    "-s",
     type=click.BOOL,
     prompt=True,
     default=True,
@@ -162,7 +161,7 @@ def add(
     day: int,
     time: datetime,
     amount: float,
-    pair: str,
+    symbol: str,
     start: bool,
 ):
     manager = create_client()
@@ -172,7 +171,7 @@ def add(
             cycle=cycle,
             time=datetime.strftime(time, "%H:%M"),
             amount=amount,
-            pair=pair,
+            symbol=symbol,
             weekday=weekday,
             day=day,
         )
@@ -275,7 +274,7 @@ def list():
         raise click.ClickException(str(e))
     click.echo(
         tabulate(
-            [(t.id, t.pair, t.amount, t.cycle, t.next_run or "Not Scheduled", t.exchange, t.status) for t in tasks],
+            [(t.id, t.symbol, t.amount, t.cycle, t.next_run or "Not Scheduled", t.exchange, t.status) for t in tasks],
             headers=HEADER,
             tablefmt="simple",
         )
