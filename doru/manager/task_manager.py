@@ -72,7 +72,7 @@ class TaskManager:
 
     def get_tasks(self) -> List[Task]:
         # update next_run fields
-        for (k, v) in self.tasks.items():
+        for k, v in self.tasks.items():
             self.tasks[k].next_run = self._get_next_run(k)
         return list(self.tasks.values())
 

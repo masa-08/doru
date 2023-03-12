@@ -85,9 +85,9 @@ def rollback(properties=List[str], files=List[str]) -> Any:
             try:
                 result = func(self, *args, **kwargs)
             except Exception:
-                for (prop, backup) in property_backups.items():
+                for prop, backup in property_backups.items():
                     setattr(self, prop, backup)
-                for (origin, backup) in file_backups.items():
+                for origin, backup in file_backups.items():
                     copyfile(backup, origin)
                 raise
             finally:

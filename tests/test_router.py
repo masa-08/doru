@@ -70,7 +70,7 @@ def credential_manager(credential_file) -> CredentialManager:
 @pytest.mark.parametrize("tasks", [TASK_DATA, {}])
 def test_get_tasks_succeed(task_manager, tasks, mocker):
     mocker.patch("doru.manager.task_manager.TaskManager._get_next_run", return_value="2022-01-01 00:00")
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.get("/tasks")
         assert res.is_success
@@ -93,7 +93,7 @@ def test_get_tasks_succeed(task_manager, tasks, mocker):
     ],
 )
 def test_post_task_with_valid_body_succeed(task_manager, new_task):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post("/tasks", json=new_task)
         data = res.json()
@@ -134,7 +134,7 @@ def test_post_task_with_valid_body_succeed(task_manager, new_task):
 )
 @pytest.mark.parametrize("tasks", [TASK_DATA])
 def test_post_task_with_invalid_body_fail(task_manager, new_task):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post("/tasks", json=new_task)
         assert res.is_error
@@ -147,7 +147,7 @@ def test_post_task_with_invalid_body_fail(task_manager, new_task):
 @pytest.mark.parametrize("tasks", [TASK_DATA])
 def test_post_task_with_unexpected_error_fail(task_manager, new_task, mocker):
     mocker.patch("doru.manager.task_manager.TaskManager.add_task", side_effect=Exception)
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post("/tasks", json=new_task)
         assert res.is_error
@@ -156,7 +156,7 @@ def test_post_task_with_unexpected_error_fail(task_manager, new_task, mocker):
 
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "2")])
 def test_post_start_task_with_valid_id_succeed(task_manager, id):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post(f"/tasks/{id}/start")
         assert res.is_success
@@ -168,7 +168,7 @@ def test_post_start_task_with_valid_id_succeed(task_manager, id):
 
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "1")])
 def test_post_start_task_with_duplicate_id_fail(task_manager, id):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post(f"/tasks/{id}/start")
         assert res.is_error
@@ -177,7 +177,7 @@ def test_post_start_task_with_duplicate_id_fail(task_manager, id):
 
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "9999")])
 def test_post_start_task_with_nonexistent_id_fail(task_manager, id):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post(f"/tasks/{id}/start")
         assert res.is_error
@@ -187,7 +187,7 @@ def test_post_start_task_with_nonexistent_id_fail(task_manager, id):
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "2")])
 def test_post_start_task_exceed_max_running_tasks_fail(task_file, id):
     task_manager = create_task_manager(file=task_file, max_running_tasks=1)
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post(f"/tasks/{id}/start")
         assert res.is_error
@@ -197,7 +197,7 @@ def test_post_start_task_exceed_max_running_tasks_fail(task_file, id):
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "2")])
 def test_post_start_task_with_unexpected_error_fail(task_manager, id, mocker):
     mocker.patch("doru.manager.task_manager.TaskManager.start_task", side_effect=Exception)
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post(f"/tasks/{id}/start")
         assert res.is_error
@@ -206,7 +206,7 @@ def test_post_start_task_with_unexpected_error_fail(task_manager, id, mocker):
 
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "1")])
 def test_post_stop_task_with_valid_id_succeed(task_manager, id):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post(f"/tasks/{id}/stop")
         assert res.is_success
@@ -218,7 +218,7 @@ def test_post_stop_task_with_valid_id_succeed(task_manager, id):
 
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "2")])
 def test_post_stop_task_with_stopped_task_id_succeed(task_manager, id):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post(f"/tasks/{id}/stop")
         assert res.is_success
@@ -230,7 +230,7 @@ def test_post_stop_task_with_stopped_task_id_succeed(task_manager, id):
 
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "9999")])
 def test_post_stop_task_with_nonexistent_id_fail(task_manager, id):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post(f"/tasks/{id}/stop")
         assert res.is_error
@@ -240,7 +240,7 @@ def test_post_stop_task_with_nonexistent_id_fail(task_manager, id):
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "1")])
 def test_post_stop_task_with_unexpected_error_fail(task_manager, id, mocker):
     mocker.patch("doru.manager.task_manager.TaskManager.stop_task", side_effect=Exception)
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.post(f"/tasks/{id}/stop")
         assert res.is_error
@@ -249,7 +249,7 @@ def test_post_stop_task_with_unexpected_error_fail(task_manager, id, mocker):
 
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "1")])
 def test_delete_task_with_valid_id_succeed(task_manager, id):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.delete(f"/tasks/{id}")
         assert res.is_success
@@ -260,7 +260,7 @@ def test_delete_task_with_valid_id_succeed(task_manager, id):
 
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "9999")])
 def test_delete_task_with_invalid_id_fail(task_manager, id):
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.delete(f"/tasks/{id}")
         assert res.is_error
@@ -270,7 +270,7 @@ def test_delete_task_with_invalid_id_fail(task_manager, id):
 @pytest.mark.parametrize("tasks, id", [(TASK_DATA, "1")])
 def test_delete_task_with_unexpected_error_fail(task_manager, id, mocker):
     mocker.patch("doru.manager.task_manager.TaskManager.remove_task", side_effect=Exception)
-    with app.container.task_manager.override(task_manager):  # type:ignore
+    with app.container.task_manager.override(task_manager):
         client = TestClient(app)
         res = client.delete(f"/tasks/{id}")
         assert res.is_error
@@ -287,7 +287,7 @@ def test_delete_task_with_unexpected_error_fail(task_manager, id, mocker):
     ],
 )
 def test_post_credential_with_valid_body_succeed(credential_manager, new_cred):
-    with app.container.credential_manager.override(credential_manager):  # type:ignore
+    with app.container.credential_manager.override(credential_manager):
         client = TestClient(app)
         res = client.post("/credentials", json=new_cred)
         assert res.is_success
@@ -304,7 +304,7 @@ def test_post_credential_with_valid_body_succeed(credential_manager, new_cred):
     ],
 )
 def test_post_credential_with_invalid_body_fail(credential_manager, new_cred):
-    with app.container.credential_manager.override(credential_manager):  # type:ignore
+    with app.container.credential_manager.override(credential_manager):
         client = TestClient(app)
         res = client.post("/credentials", json=new_cred)
         assert res.is_error
@@ -319,7 +319,7 @@ def test_post_credential_with_invalid_body_fail(credential_manager, new_cred):
 )
 def test_post_credential_with_unexpected_error_fail(credential_manager, new_cred, mocker):
     mocker.patch("doru.manager.credential_manager.CredentialManager.add_credential", side_effect=Exception)
-    with app.container.credential_manager.override(credential_manager):  # type:ignore
+    with app.container.credential_manager.override(credential_manager):
         client = TestClient(app)
         res = client.post("/credentials", json=new_cred)
         assert res.is_error
@@ -328,7 +328,7 @@ def test_post_credential_with_unexpected_error_fail(credential_manager, new_cred
 
 @pytest.mark.parametrize("credentials, exchange", [(CREDENTIAL_DATA, "bitbank")])
 def test_delete_credential_with_valid_exchange_succeed(credential_manager, exchange):
-    with app.container.credential_manager.override(credential_manager):  # type:ignore
+    with app.container.credential_manager.override(credential_manager):
         client = TestClient(app)
         res = client.delete(f"/credentials/{exchange}")
         assert res.is_success
@@ -336,7 +336,7 @@ def test_delete_credential_with_valid_exchange_succeed(credential_manager, excha
 
 @pytest.mark.parametrize("credentials, exchange", [(CREDENTIAL_DATA, "bitflyer")])
 def test_delete_credential_with_nonexistent_exchange_fail(credential_manager, exchange):
-    with app.container.credential_manager.override(credential_manager):  # type:ignore
+    with app.container.credential_manager.override(credential_manager):
         client = TestClient(app)
         res = client.delete(f"/credentials/{exchange}")
         assert res.is_error
@@ -346,7 +346,7 @@ def test_delete_credential_with_nonexistent_exchange_fail(credential_manager, ex
 @pytest.mark.parametrize("credentials, exchange", [(CREDENTIAL_DATA, "bitbank")])
 def test_delete_credential_with_unexpected_error_fail(credential_manager, exchange, mocker):
     mocker.patch("doru.manager.credential_manager.CredentialManager.remove_credential", side_effect=Exception)
-    with app.container.credential_manager.override(credential_manager):  # type:ignore
+    with app.container.credential_manager.override(credential_manager):
         client = TestClient(app)
         res = client.delete(f"/credentials/{exchange}")
         assert res.is_error

@@ -61,7 +61,7 @@ def test_flagged_safe_scheduler_with_job_exception_reschedule_job(scheduler, cou
 
 def test_unflagged_safe_scheduler_with_job_exception_cancel_job(counter, caplog):
     s = SafeScheduler(reschedule_on_failure=False)
-    s.every(0.1).until(timedelta(seconds=0.25)).seconds.do(bad_job, counter)
+    s.every(1).until(timedelta(seconds=2.5)).seconds.do(bad_job, counter)
     while s.next_run is not None:
         s.run_pending()
     assert counter.value == 1
@@ -70,15 +70,15 @@ def test_unflagged_safe_scheduler_with_job_exception_cancel_job(counter, caplog)
 
 
 def test_schedule_thread_run_continuously_until_stop_called(scheduler: SafeScheduler, counter):
-    scheduler.every(0.1).seconds.do(good_job, counter)
-    t = ScheduleThread(scheduler=scheduler, cycle=0.01)
+    scheduler.every(1).seconds.do(good_job, counter)
+    t = ScheduleThread(scheduler=scheduler, cycle=0.1)
 
     t.start()
-    time.sleep(0.25)
+    time.sleep(2.5)
     assert t.is_alive()
 
     t.stop()
-    time.sleep(0.25)
+    time.sleep(2.5)
     # There are two execution timings
     # - Approximately 0.1 second after thread start
     # - Approximately 0.2 seconds after thread start
@@ -88,15 +88,15 @@ def test_schedule_thread_run_continuously_until_stop_called(scheduler: SafeSched
 
 
 def test_schedule_thread_run_will_be_finished_when_there_is_no_job_to_execute(scheduler: SafeScheduler, counter):
-    scheduler.every(0.1).seconds.do(good_job, counter)
-    t = ScheduleThread(scheduler=scheduler, cycle=0.01)
+    scheduler.every(1).seconds.do(good_job, counter)
+    t = ScheduleThread(scheduler=scheduler, cycle=0.1)
 
     t.start()
-    time.sleep(0.25)
+    time.sleep(2.5)
     assert t.is_alive()
 
     t.scheduler.clear()
-    time.sleep(0.25)
+    time.sleep(2.5)
     assert not t.is_alive()
 
 
