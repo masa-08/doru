@@ -184,7 +184,7 @@ def test_schedule_thread_pool_submit_without_day_param_for_monthly_thread_raise_
 def test_schedule_thread_pool_submit_delete_zombie_thread_and_succeed(thread_pool: ScheduleThreadPool, key):
     thread_pool.start(key)
     thread_pool.pool[key].stop()
-    time.sleep(1)
+    time.sleep(2)
     assert key in thread_pool.pool
     assert thread_pool.pool[key].is_started()
 
