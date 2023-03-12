@@ -6,8 +6,6 @@ from typing import Any, Callable, List
 
 from nanoid import generate
 
-from doru.exceptions import DoruError
-
 logger = getLogger(__name__)
 
 
@@ -65,19 +63,11 @@ def rollback(properties=List[str], files=List[str]) -> Any:
 
             # backup properties
             for prop in properties:
-                if not hasattr(self, prop):
-                    raise DoruError(f"{prop} is not a member of {self.__class__.__name__}")
                 property_backups[prop] = deepcopy(getattr(self, prop))
 
             # create backup files
             for file in files:
-                if not hasattr(self, file):
-                    raise DoruError(f"{file} is not a member of {self.__class__.__name__}")
-
                 origin = getattr(self, file)
-                if not os.path.exists(origin):
-                    raise DoruError(f"{file} does not exist.")
-
                 backup = f"{origin}_bk_{generate()}"
                 file_backups[origin] = backup
                 copyfile(src=origin, dst=backup)
