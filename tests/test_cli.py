@@ -2,6 +2,7 @@ from typing import List
 
 import pytest
 from click.testing import CliRunner
+from requests import HTTPError
 
 from doru.api.client import Client
 from doru.api.schema import Task
@@ -50,6 +51,11 @@ def test_add_with_valid_amount_succeed(exchange, cycle, amount, symbol, mocker):
     assert result.exit_code == 0
     assert spy.call_count == 1
 
+    # Optiion `-s` and `-e` is checked simultaneously in `validate_exchange_symbol` method.
+    result = CliRunner().invoke(cli, args=["add", "-s", symbol, "-e", exchange, "-c", cycle, "-a", amount])
+    assert result.exit_code == 0
+    assert spy.call_count == 2
+
 
 @pytest.mark.parametrize("exchange, cycle, amount, symbol, start", [["bitbank", "Daily", "1", "BTC/JPY", "False"]])
 def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, cycle, amount, symbol, start, mocker):
@@ -60,6 +66,13 @@ def test_add_with_valid_amount_and_not_start_flag_succeed(exchange, cycle, amoun
     )
     assert result.exit_code == 0
     assert spy.call_count == 0
+
+
+@pytest.mark.parametrize("exchange, cycle, amount, symbol", [["bitbank", "Daily", "1", "BTC/JPY"]])
+def test_add_fail_when_task_daemon_manager_raise_http_error(exchange, cycle, amount, symbol, mocker):
+    mocker.patch("doru.api.client.Client.add_task", side_effect=HTTPError)
+    result = CliRunner().invoke(cli, args=["add", "-e", exchange, "-c", cycle, "-a", amount, "-s", symbol])
+    assert result.exit_code != 0
 
 
 @pytest.mark.parametrize("exchange, cycle, amount, symbol", [["bitbank", "Daily", "1", "BTC/JPY"]])
@@ -131,6 +144,13 @@ def test_remove_with_valid_id_succeed(id, mocker):
 
 
 @pytest.mark.parametrize("id", ["9999"])
+def test_remove_with_http_error_fail(id, mocker):
+    mocker.patch("doru.api.client.Client.remove_task", side_effect=HTTPError)
+    result = CliRunner().invoke(cli, args=["remove", id])
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("id", ["9999"])
 def test_remove_with_invalid_id_fail(id, mocker):
     mocker.patch("doru.api.client.Client.remove_task", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["remove", id])
@@ -153,13 +173,38 @@ def test_start_all_tasks_succeed(mocker):
 
 @pytest.mark.parametrize("id", ["9999"])
 def test_start_with_invalid_id_fail(id, mocker):
-    mocker.patch("doru.api.client.Client.start_task", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["start", id])
     assert result.exit_code != 0
 
 
 def test_start_with_no_id_fail():
     result = CliRunner().invoke(cli, args=["start"])
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("id", ["1"])
+def test_start_with_http_error_fail(id, mocker):
+    mocker.patch("doru.api.client.Client.start_task", side_effect=HTTPError)
+    result = CliRunner().invoke(cli, args=["start", id])
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("id", ["1"])
+def test_start_with_exception_fail(id, mocker):
+    mocker.patch("doru.api.client.Client.start_task", side_effect=Exception)
+    result = CliRunner().invoke(cli, args=["start", id])
+    assert result.exit_code != 0
+
+
+def test_start_all_tasks_with_http_error_fail(mocker):
+    mocker.patch("doru.api.client.Client.get_tasks", side_effect=HTTPError)
+    result = CliRunner().invoke(cli, args=["start", "--all"])
+    assert result.exit_code != 0
+
+
+def test_start_all_tasks_with_exception_fail(mocker):
+    mocker.patch("doru.api.client.Client.get_tasks", side_effect=Exception)
+    result = CliRunner().invoke(cli, args=["start", "--all"])
     assert result.exit_code != 0
 
 
@@ -186,6 +231,32 @@ def test_stop_with_invalid_id_fail(id, mocker):
 
 def test_stop_with_no_id_fail():
     result = CliRunner().invoke(cli, args=["stop"])
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("id", ["1"])
+def test_stop_with_http_error_fail(id, mocker):
+    mocker.patch("doru.api.client.Client.stop_task", side_effect=HTTPError)
+    result = CliRunner().invoke(cli, args=["stop", id])
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("id", ["1"])
+def test_stop_with_exception_fail(id, mocker):
+    mocker.patch("doru.api.client.Client.stop_task", side_effect=Exception)
+    result = CliRunner().invoke(cli, args=["stop", id])
+    assert result.exit_code != 0
+
+
+def test_stop_all_tasks_with_http_error_fail(mocker):
+    mocker.patch("doru.api.client.Client.get_tasks", side_effect=HTTPError)
+    result = CliRunner().invoke(cli, args=["stop", "--all"])
+    assert result.exit_code != 0
+
+
+def test_stop_all_tasks_with_exception_fail(mocker):
+    mocker.patch("doru.api.client.Client.get_tasks", side_effect=Exception)
+    result = CliRunner().invoke(cli, args=["stop", "--all"])
     assert result.exit_code != 0
 
 
@@ -257,6 +328,12 @@ def test_list_with_no_task_succeed(mocker):
     )
 
 
+def test_list_with_exception_fail(mocker):
+    mocker.patch("doru.api.client.Client.get_tasks", side_effect=Exception)
+    result = CliRunner().invoke(cli, args=["list"])
+    assert result.exit_code != 0
+
+
 @pytest.mark.parametrize("exchange, expected_key, expected_secret", [("bitbank", "xxxxxxxxxx", "yyyyyyyyyy")])
 @pytest.mark.parametrize(
     "key, secret",
@@ -274,6 +351,13 @@ def test_add_credential_succeed(exchange, key, secret, expected_key, expected_se
 
     mock_args = mock.call_args_list
     assert mock_args[0][0] == (exchange, expected_key, expected_secret)
+
+
+@pytest.mark.parametrize("exchange, key, secret", [["bitbank", "xxxxxxxxxx", "yyyyyyyyyy"]])
+def test_add_credential_fail_when_add_cred_function_raise_http_error(exchange, key, secret, mocker):
+    mocker.patch("doru.api.client.Client.add_cred", side_effect=HTTPError)
+    result = CliRunner().invoke(cli, args=["cred", "add", "--exchange", exchange, "--key", key, "--secret", secret])
+    assert result.exit_code != 0
 
 
 @pytest.mark.parametrize("exchange, key, secret", [["bitbank", "xxxxxxxxxx", "yyyyyyyyyy"]])
@@ -300,6 +384,13 @@ def test_remove_credential_succeed(exchange, mocker):
 
 
 @pytest.mark.parametrize("exchange", ["bitbank"])
+def test_remove_credential_fail_when_remove_cred_function_raise_http_error(exchange, mocker):
+    mocker.patch("doru.api.client.Client.remove_cred", side_effect=HTTPError)
+    result = CliRunner().invoke(cli, args=["cred", "remove", "--exchange", exchange])
+    assert result.exit_code != 0
+
+
+@pytest.mark.parametrize("exchange", ["bitbank"])
 def test_remove_credential_fail_when_remove_cred_function_raise_exception(exchange, mocker):
     mocker.patch("doru.api.client.Client.remove_cred", side_effect=Exception)
     result = CliRunner().invoke(cli, args=["cred", "remove", "--exchange", exchange])
@@ -312,6 +403,24 @@ def test_remove_credential_with_invalid_param_fail(exchange):
     assert result.exit_code != 0
 
 
+def test_daemon_terminate_succeed(mocker):
+    mocker.patch("doru.api.client.Client.terminate", return_value=None)
+    result = CliRunner().invoke(cli, args=["daemon", "terminate"])
+    assert result.exit_code == 0
+
+
+def test_daemon_terminate_fail_when_terminate_raise_http_error(mocker):
+    mocker.patch("doru.api.client.Client.terminate", side_effect=HTTPError)
+    result = CliRunner().invoke(cli, args=["daemon", "terminate"])
+    assert result.exit_code != 0
+
+
+def test_daemon_terminate_fail_when_terminate_raise_exception(mocker):
+    mocker.patch("doru.api.client.Client.terminate", side_effect=Exception)
+    result = CliRunner().invoke(cli, args=["daemon", "terminate"])
+    assert result.exit_code != 0
+
+
 def test_top_level_help():
     result = CliRunner().invoke(cli, args=["--help"])
     assert "add     Add a task to accumulate crypto." in result.stdout
@@ -320,3 +429,4 @@ def test_top_level_help():
     assert "stop    Stop tasks to accumulate crypto." in result.stdout
     assert "list    Display tasks to accumulate crypto." in result.stdout
     assert "cred    Add or remove credentials for the exchanges." in result.stdout
+    assert "daemon  Terminate the background process for this application." in result.stdout

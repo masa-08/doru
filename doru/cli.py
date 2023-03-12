@@ -38,8 +38,6 @@ def validate_exchange_symbol(ctx: click.Context, param: click.Option, value):
             if "exchange" not in ctx.params.keys():
                 return value
             is_valid_symbol(ctx.params["exchange"], value)
-        else:
-            raise ValueError("Invalid param name.")
     except Exception as e:
         raise click.ClickException(str(e))
     return value
