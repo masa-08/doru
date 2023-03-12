@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "doru"
 version = "0.1.0"
-description = "Bot to accumulate crypto on centralized exchanges using dollar-cost averaging."
+description = "Command line tool to accumulate crypto on centralized exchanges using dollar-cost averaging."
 authors = ["Masaharu Shimizu <masaharu.shimizu08@gmail.com>"]
 
 [tool.poetry.dependencies]
@@ -21,66 +21,18 @@ backoff = "^2.2.1"
 ccxt = "^2.8.37"
 retry = "^0.9.2"
 
-[tool.poetry.dev-dependencies]
-pytest = "^5.2"
-mypy = "^0.991"
-black = "^22.10.0"
-flake9 = "^3.8.3"
-autoflake = "^1.7.8"
-isort = "^5.10.1"
-importlib-metadata = "^4.13.0"
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.2"
 typing-extensions = "^4.4.0"
 pytest-mock = "^3.10.0"
 types-tabulate = "^0.9.0"
 httpx = "^0.23.3"
 types-requests = "^2.28.11"
 pytest-freezegun = "^0.4.2"
-
-[tool.poetry.group.dev.dependencies]
 types-retry = "^0.9.9.2"
-
-[tool.isort]
-profile = "black"
-skip_glob = [
-    ".venv",
-]
-
-[tool.black]
-line-length = 119
-exclude = '''
-(
-    /(
-        .git
-        |.venv
-        |.vscode
-        |.mypy_cache
-        |README.md
-        |__pycache__
-    )/
-)
-'''
-
-[tool.flake8]
-max-line-length = 119
-exclude = ".venv"
-
-[tool.mypy]
-check_untyped_defs = true
-disallow_any_generics = true
-disallow_untyped_calls = true
-disallow_untyped_decorators = false
-ignore_errors = false
-ignore_missing_imports = true
-implicit_reexport = false
-no_implicit_optional = true
-show_error_codes = true
-strict_equality = true
-strict_optional = true
-warn_no_return = true
-warn_redundant_casts = true
-warn_unreachable = true
-warn_unused_configs = true
-warn_unused_ignores = true
+pre-commit = "^2.21.0"
+tox = "^4.4.6"
+pytest-cov = "^4.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
