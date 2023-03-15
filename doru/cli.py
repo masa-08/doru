@@ -162,9 +162,9 @@ def add(
     symbol: str,
     start: bool,
 ):
-    manager = create_client()
+    client = create_client()
     try:
-        task = manager.add_task(
+        task = client.add_task(
             exchange=exchange,
             cycle=cycle,
             time=datetime.strftime(time, "%H:%M"),
@@ -175,7 +175,7 @@ def add(
         )
         if start:
             click.echo("Successfully added.")
-            manager.start_task(task.id)
+            client.start_task(task.id)
     except HTTPError as e:
         raise_with_response_message(e)
     except Exception as e:
@@ -185,9 +185,9 @@ def add(
 @cli.command(help="Remove a task to accumulate crypto.")
 @click.argument("id", nargs=1, type=click.STRING)
 def remove(id: str):
-    manager = create_client()
+    client = create_client()
     try:
-        manager.remove_task(id)
+        client.remove_task(id)
     except HTTPError as e:
         raise_with_response_message(e)
     except Exception as e:
@@ -209,10 +209,10 @@ def start(ids: List[str], all: str):
     if not ids and not all:
         raise click.ClickException("Task id or `--all` option must be specified.")
 
-    manager = create_client()
+    client = create_client()
     if all:
         try:
-            manager.start_all_tasks()
+            client.start_all_tasks()
             click.echo("Successfully started.")
             return
         except HTTPError as e:
@@ -221,7 +221,7 @@ def start(ids: List[str], all: str):
             raise click.ClickException(str(e))
     for id in ids:
         try:
-            manager.start_task(id)
+            client.start_task(id)
         except HTTPError as e:
             raise_with_response_message(e)
         except Exception as e:
@@ -243,10 +243,10 @@ def stop(ids: List[str], all: str):
     if not ids and not all:
         raise click.ClickException("Task id or `--all` option must be specified.")
 
-    manager = create_client()
+    client = create_client()
     if all:
         try:
-            manager.stop_all_tasks()
+            client.stop_all_tasks()
             click.echo("Successfully stopped.")
             return
         except HTTPError as e:
@@ -255,7 +255,7 @@ def stop(ids: List[str], all: str):
             raise click.ClickException(str(e))
     for id in ids:
         try:
-            manager.stop_task(id)
+            client.stop_task(id)
         except HTTPError as e:
             raise_with_response_message(e)
         except Exception as e:
@@ -265,9 +265,9 @@ def stop(ids: List[str], all: str):
 
 @cli.command(help="Display tasks to accumulate crypto.")
 def list():
-    manager = create_client()
+    client = create_client()
     try:
-        tasks = manager.get_tasks()
+        tasks = client.get_tasks()
     except Exception as e:
         raise click.ClickException(str(e))
     click.echo(
@@ -315,10 +315,10 @@ def cred():
     help="Enter the API secret.",
 )
 def cred_add(exchange, key, secret):
-    manager = create_client()
+    client = create_client()
     key, secret = key.strip(), secret.strip()
     try:
-        manager.add_cred(exchange, key, secret)
+        client.add_cred(exchange, key, secret)
     except HTTPError as e:
         raise_with_response_message(e)
     except Exception as e:
@@ -337,9 +337,9 @@ def cred_add(exchange, key, secret):
     help="Select the exchange from which you want to remove the credential.",
 )
 def cred_remove(exchange):
-    manager = create_client()
+    client = create_client()
     try:
-        manager.remove_cred(exchange)
+        client.remove_cred(exchange)
     except HTTPError as e:
         raise_with_response_message(e)
     except Exception as e:
