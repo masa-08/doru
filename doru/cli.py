@@ -13,7 +13,7 @@ from doru.types import Cycle, Weekday
 
 ENABLE_CYCLES = get_args(Cycle)
 WEEKDAY = get_args(Weekday)
-HEADER = ["ID", "Pair", "Amount", "Cycle", "Next Invest Date", "Exchange", "Status"]
+HEADER = ["ID", "Symbol", "Amount", "Cycle", "Next Invest Date", "Exchange", "Status"]
 
 
 def validate_exchange(ctx, param, value):
@@ -28,18 +28,16 @@ def validate_exchange_symbol(ctx: click.Context, param: click.Option, value):
     try:
         if param.name == "exchange":
             is_valid_exchange_name(value)
-            # If pair is specified before exchange,
-            # validate pair here because pair is not checked.
-            if "pair" in ctx.params.keys():
-                is_valid_symbol(value, ctx.params["pair"])
-        elif param.name == "pair":
-            # If pair is specified before exchange,
-            # pair will be validated during the exchange validation
+            # If symbol is specified before exchange,
+            # validate symbol here because symbol is not checked.
+            if "symbol" in ctx.params.keys():
+                is_valid_symbol(value, ctx.params["symbol"])
+        elif param.name == "symbol":
+            # If symbol is specified before exchange,
+            # symbol will be validated during the exchange validation
             if "exchange" not in ctx.params.keys():
                 return value
             is_valid_symbol(ctx.params["exchange"], value)
-        else:
-            raise ValueError("Invalid param name.")
     except Exception as e:
         raise click.ClickException(str(e))
     return value
@@ -88,13 +86,13 @@ def cli():
     help="Enter the exchange you will use.",
 )
 @click.option(
-    "--pair",
-    "-p",
+    "--symbol",
+    "-s",
     required=True,
     type=str,
     prompt=True,
     callback=validate_exchange_symbol,
-    help="Enter the pair you want to buy.",  # TODO: pair => symbol
+    help="Enter the symbol you want to buy.",
 )
 @click.option(
     "--cycle",
@@ -149,7 +147,6 @@ This option is enabled when the interval is set to `month`."
 )
 @click.option(
     "--start",
-    "-s",
     type=click.BOOL,
     prompt=True,
     default=True,
@@ -162,23 +159,23 @@ def add(
     day: int,
     time: datetime,
     amount: float,
-    pair: str,
+    symbol: str,
     start: bool,
 ):
-    manager = create_client()
+    client = create_client()
     try:
-        task = manager.add_task(
+        task = client.add_task(
             exchange=exchange,
             cycle=cycle,
             time=datetime.strftime(time, "%H:%M"),
             amount=amount,
-            pair=pair,
+            symbol=symbol,
             weekday=weekday,
             day=day,
         )
         if start:
             click.echo("Successfully added.")
-            manager.start_task(task.id)
+            client.start_task(task.id)
     except HTTPError as e:
         raise_with_response_message(e)
     except Exception as e:
@@ -188,9 +185,9 @@ def add(
 @cli.command(help="Remove a task to accumulate crypto.")
 @click.argument("id", nargs=1, type=click.STRING)
 def remove(id: str):
-    manager = create_client()
+    client = create_client()
     try:
-        manager.remove_task(id)
+        client.remove_task(id)
     except HTTPError as e:
         raise_with_response_message(e)
     except Exception as e:
@@ -212,10 +209,10 @@ def start(ids: List[str], all: str):
     if not ids and not all:
         raise click.ClickException("Task id or `--all` option must be specified.")
 
-    manager = create_client()
+    client = create_client()
     if all:
         try:
-            manager.start_all_tasks()
+            client.start_all_tasks()
             click.echo("Successfully started.")
             return
         except HTTPError as e:
@@ -224,7 +221,7 @@ def start(ids: List[str], all: str):
             raise click.ClickException(str(e))
     for id in ids:
         try:
-            manager.start_task(id)
+            client.start_task(id)
         except HTTPError as e:
             raise_with_response_message(e)
         except Exception as e:
@@ -246,10 +243,10 @@ def stop(ids: List[str], all: str):
     if not ids and not all:
         raise click.ClickException("Task id or `--all` option must be specified.")
 
-    manager = create_client()
+    client = create_client()
     if all:
         try:
-            manager.stop_all_tasks()
+            client.stop_all_tasks()
             click.echo("Successfully stopped.")
             return
         except HTTPError as e:
@@ -258,7 +255,7 @@ def stop(ids: List[str], all: str):
             raise click.ClickException(str(e))
     for id in ids:
         try:
-            manager.stop_task(id)
+            client.stop_task(id)
         except HTTPError as e:
             raise_with_response_message(e)
         except Exception as e:
@@ -268,14 +265,14 @@ def stop(ids: List[str], all: str):
 
 @cli.command(help="Display tasks to accumulate crypto.")
 def list():
-    manager = create_client()
+    client = create_client()
     try:
-        tasks = manager.get_tasks()
+        tasks = client.get_tasks()
     except Exception as e:
         raise click.ClickException(str(e))
     click.echo(
         tabulate(
-            [(t.id, t.pair, t.amount, t.cycle, t.next_run or "Not Scheduled", t.exchange, t.status) for t in tasks],
+            [(t.id, t.symbol, t.amount, t.cycle, t.next_run or "Not Scheduled", t.exchange, t.status) for t in tasks],
             headers=HEADER,
             tablefmt="simple",
         )
@@ -318,10 +315,10 @@ def cred():
     help="Enter the API secret.",
 )
 def cred_add(exchange, key, secret):
-    manager = create_client()
+    client = create_client()
     key, secret = key.strip(), secret.strip()
     try:
-        manager.add_cred(exchange, key, secret)
+        client.add_cred(exchange, key, secret)
     except HTTPError as e:
         raise_with_response_message(e)
     except Exception as e:
@@ -340,9 +337,9 @@ def cred_add(exchange, key, secret):
     help="Select the exchange from which you want to remove the credential.",
 )
 def cred_remove(exchange):
-    manager = create_client()
+    client = create_client()
     try:
-        manager.remove_cred(exchange)
+        client.remove_cred(exchange)
     except HTTPError as e:
         raise_with_response_message(e)
     except Exception as e:

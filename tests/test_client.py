@@ -12,7 +12,7 @@ TEST_DATA: List[Task] = [
         cycle="Daily",
         time="00:00",
         amount=10000,
-        pair="BTC/JPY",
+        symbol="BTC/JPY",
         status="Stopped",
     ),
     Task(
@@ -22,7 +22,7 @@ TEST_DATA: List[Task] = [
         time="23:59",
         exchange="bitflyer",
         amount=20000,
-        pair="ETH/JPY",
+        symbol="ETH/JPY",
         status="Running",
     ),
     Task(
@@ -32,7 +32,7 @@ TEST_DATA: List[Task] = [
         time="23:59",
         exchange="bitflyer",
         amount=30000,
-        pair="ETH/JPY",
+        symbol="ETH/JPY",
         status="Stopped",
     ),
 ]
@@ -91,47 +91,47 @@ def test_get_tasks_with_missing_required_key_fail(mocker):
     assert e
 
 
-@pytest.mark.parametrize("exchange, cycle, time, amount, pair", [["bitbank", "Daily", "00:00", 1, "BTC/JPY"]])
-def test_add_task_with_valid_response_succeed(exchange, cycle, time, amount, pair, mocker):
+@pytest.mark.parametrize("exchange, cycle, time, amount, symbol", [["bitbank", "Daily", "00:00", 1, "BTC/JPY"]])
+def test_add_task_with_valid_response_succeed(exchange, cycle, time, amount, symbol, mocker):
     def get_response(*args, **kwargs):
         return MockResponse(TEST_DATA[0].dict(), 200)
 
     mocker.patch("doru.api.session.SessionWithSocket.post", side_effect=get_response)
     d = create_client()
-    result = d.add_task(exchange, cycle, time, amount, pair)
+    result = d.add_task(exchange, cycle, time, amount, symbol)
     assert result == TEST_DATA[0]
 
 
-@pytest.mark.parametrize("exchange, cycle, time, amount, pair", [["bitbank", "Daily", "00:00", 1, "BTC/JPY"]])
-def test_add_task_with_empty_response_fail(exchange, cycle, time, amount, pair, mocker):
+@pytest.mark.parametrize("exchange, cycle, time, amount, symbol", [["bitbank", "Daily", "00:00", 1, "BTC/JPY"]])
+def test_add_task_with_empty_response_fail(exchange, cycle, time, amount, symbol, mocker):
     def get_response(*args, **kwargs):
         return MockResponse({}, 200)
 
     mocker.patch("doru.api.session.SessionWithSocket.post", side_effect=get_response)
     d = create_client()
     with pytest.raises(KeyError) as e:
-        d.add_task(exchange, cycle, time, amount, pair)
+        d.add_task(exchange, cycle, time, amount, symbol)
     assert e
 
 
-@pytest.mark.parametrize("exchange, cycle, time, amount, pair", [["bitbank", "Daily", "00:00", 1, "BTC/JPY"]])
-def test_add_task_with_extra_key_succeed(exchange, cycle, time, amount, pair, mocker):
+@pytest.mark.parametrize("exchange, cycle, time, amount, symbol", [["bitbank", "Daily", "00:00", 1, "BTC/JPY"]])
+def test_add_task_with_extra_key_succeed(exchange, cycle, time, amount, symbol, mocker):
     def get_response(*args, **kwargs):
         return MockResponse({"extra": "value", **TEST_DATA[0].dict()}, 200)
 
     mocker.patch("doru.api.session.SessionWithSocket.post", side_effect=get_response)
     d = create_client()
-    result = d.add_task(exchange, cycle, time, amount, pair)
+    result = d.add_task(exchange, cycle, time, amount, symbol)
     assert result == TEST_DATA[0]
 
 
-@pytest.mark.parametrize("exchange, cycle, time, amount, pair", [["bitbank", "Daily", "00:00", 1, "BTC/JPY"]])
-def test_add_task_with_missing_required_key_fail(exchange, cycle, time, amount, pair, mocker):
+@pytest.mark.parametrize("exchange, cycle, time, amount, symbol", [["bitbank", "Daily", "00:00", 1, "BTC/JPY"]])
+def test_add_task_with_missing_required_key_fail(exchange, cycle, time, amount, symbol, mocker):
     def get_response(*args, **kwargs):
         return MockResponse({k: v for k, v in TEST_DATA[0].dict().items() if k != "id"}, 200)
 
     mocker.patch("doru.api.session.SessionWithSocket.post", side_effect=get_response)
     d = create_client()
     with pytest.raises(KeyError) as e:
-        d.add_task(exchange, cycle, time, amount, pair)
+        d.add_task(exchange, cycle, time, amount, symbol)
     assert e

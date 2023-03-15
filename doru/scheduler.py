@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import random
 import re
@@ -6,7 +7,7 @@ from logging import getLogger
 from threading import Event, Thread
 from typing import Any, Callable, Dict, Optional, Union
 
-from schedule import IntervalError, Job, ScheduleError, Scheduler, ScheduleValueError
+from schedule import Job, ScheduleError, Scheduler, ScheduleValueError
 
 from doru.exceptions import DoruError
 from doru.types import Cycle, Weekday
@@ -19,39 +20,30 @@ DEFAULT_TIME = "00:00"
 class MonthEnabledJob(Job):
     def __init__(self, interval: int, scheduler: Scheduler = None):
         super().__init__(interval, scheduler)
-        # Specific date of the month to start on
-        self.start_date: Optional[int] = None
+        # optional date on which this job runs
+        self.on_date: Optional[int] = None
 
-    @property
-    def month(self):
-        if self.interval != 1:
-            raise IntervalError("Use months instead of month")
-        return self.months
+    def date(self, date_str: str):
+        if self.unit in ("weeks", "days", "hours", "minutes", "seconds") or self.start_day:  # type: ignore[has-type]
+            raise ScheduleValueError("Invalid unit (valid units are `months` and `years`)")
 
-    @property
-    def months(self):
-        self.unit = "months"
-        return self
-
-    def date(self, time_str: str):
-        if self.unit != "months":
-            raise ScheduleValueError("Invalid unit (valid unit is `months`")
-
-        if not isinstance(time_str, str):
+        if not isinstance(date_str, str):
             raise TypeError("date() should be passed a string")
 
-        if not re.match(r"^([1-9]|0[1-9]|[12]\d|3[01])$", time_str):
-            raise ScheduleValueError("Invalid date format for a monthly job (valid format is dd)")
+        if re.match(r"^(0[1-9]|[12]\d|3[01])$", date_str):
+            self.unit = "months"
+        else:
+            raise ScheduleValueError("Invalid date format (valid format is mm)")
 
-        self.start_date = int(time_str)
+        self.on_date = int(date_str)
         return self
 
     def at(self, time_str):
-        if self.unit not in ("days", "hours", "minutes") and not self.start_day and not self.start_date:
+        if self.unit not in ("days", "hours", "minutes") and not self.start_day and not self.on_date:
             raise ScheduleValueError("Invalid unit (valid units are `days`, `hours`, and `minutes`)")
         if not isinstance(time_str, str):
             raise TypeError("at() should be passed a string")
-        if self.unit == "days" or self.start_day:
+        if self.unit == "days" or self.start_day or self.on_date:
             if not re.match(r"^([0-2]\d:)?[0-5]\d:[0-5]\d$", time_str):
                 raise ScheduleValueError("Invalid time format for a daily job (valid format is HH:MM(:SS)?)")
         if self.unit == "hours":
@@ -77,7 +69,7 @@ class MonthEnabledJob(Job):
         else:
             hour, minute = time_values
             second = 0
-        if self.unit == "days" or self.start_day or self.start_date:
+        if self.unit == "days" or self.start_day or self.on_date:
             hour = int(hour)
             if not (0 <= hour <= 23):
                 raise ScheduleValueError("Invalid number of hours ({} is not between 0 and 23)")
@@ -105,27 +97,19 @@ class MonthEnabledJob(Job):
             interval = self.interval
 
         if self.unit == "months":
-            if self.start_date is None:
-                raise ScheduleValueError("`start_date` is needed for `months`")
-
+            # Convert monthly interval to daily
             now = datetime.datetime.now()
-            start_month, start_year = now.month + self.interval, now.year
-            while start_month > 12:
-                start_month -= 12
-                start_year += 1
-            try:
-                # The period property is not used when unit is `months` because timedelta doesn't support months.
-                # However, if the period property is not set, a TypeError may occur in `if self.at_time is not None` part,
-                # so the period property is set by estimating that 1month = 31days.
-                self.period = datetime.timedelta(**{"days": 31 * interval})
-                self.next_run = datetime.datetime(
-                    start_year, start_month, self.start_date, now.hour, now.minute, now.second, now.microsecond
-                )
-            except ValueError:
-                raise ScheduleValueError("Invalid datetime")
+            year_months = [(now.year, now.month + i) for i in range(self.interval)]
+            days_interval = 0
+            for year, month in year_months:
+                while month > 12:
+                    year += 1
+                    month -= 12
+                days_interval += calendar.monthrange(year, month)[1]
+            self.period = datetime.timedelta(days=days_interval)
         else:
             self.period = datetime.timedelta(**{self.unit: interval})
-            self.next_run = datetime.datetime.now() + self.period
+        self.next_run = datetime.datetime.now() + self.period
 
         if self.start_day is not None:
             if self.unit != "weeks":
@@ -146,13 +130,18 @@ class MonthEnabledJob(Job):
             if days_ahead <= 0:  # Target day already happened this week
                 days_ahead += 7
             self.next_run += datetime.timedelta(days_ahead) - self.period
+        if self.on_date is not None:
+            if self.unit != "months":
+                raise ScheduleValueError("`unit` should be 'months'")
+            kwargs = {"day": self.on_date}
+            self.next_run = self.next_run.replace(**kwargs)  # type: ignore[arg-type]
         if self.at_time is not None:
-            if self.unit not in ("days", "hours", "minutes") and self.start_day is None and self.start_date is None:
+            if self.unit not in ("days", "hours", "minutes") and self.start_day is None and self.on_date is None:
                 raise ScheduleValueError("Invalid unit without specifying start day")
             kwargs = {"second": self.at_time.second, "microsecond": 0}
-            if self.unit == "days" or self.start_day is not None or self.start_date is not None:
+            if self.unit == "days" or self.start_day is not None or self.on_date is not None:
                 kwargs["hour"] = self.at_time.hour
-            if self.unit in ["days", "hours"] or self.start_day is not None or self.start_date is not None:
+            if self.unit in ["days", "hours"] or self.start_day is not None or self.on_date is not None:
                 kwargs["minute"] = self.at_time.minute
             self.next_run = self.next_run.replace(**kwargs)  # type:ignore
 
@@ -175,16 +164,10 @@ class MonthEnabledJob(Job):
             if (self.next_run - datetime.datetime.now()).days >= 7:
                 self.next_run -= self.period
 
-        # For monthly job
-        if self.start_date is not None and self.at_time is not None:
-            next_run_interval_before = self.next_run.replace(month=self.next_run.month - self.interval)
-            if next_run_interval_before >= datetime.datetime.now():
-                self.next_run = next_run_interval_before
-                while self.next_run.month <= 0:
-                    self.next_run = self.next_run.replace(
-                        month=self.next_run.month + 12,
-                        year=self.next_run.year - 1,
-                    )
+        if self.on_date is not None:
+            # Make sure that next_run is within the period specified by interval
+            if (self.next_run - datetime.datetime.now()).days >= days_interval:
+                self.next_run -= datetime.timedelta(days=days_interval)
 
 
 # ref: https://gist.github.com/mplewis/8483f1c24f2d6259aef6
@@ -308,7 +291,7 @@ class ScheduleThreadPool:
             if day is None:
                 raise DoruError("The day parameter should not be None in the monthly schedule thread.")
 
-            scheduler.every().month.date(str(day)).at(time).do(func, *args, **kwargs)
+            scheduler.every().date(f"{day:02}").at(time).do(func, *args, **kwargs)
         return ScheduleThread(scheduler, daemon=True)
 
     @property

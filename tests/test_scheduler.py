@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 from logging import ERROR, WARNING
 
 import pytest
+import schedule
 
 from doru.exceptions import DoruError
 from doru.scheduler import SafeScheduler, ScheduleThread, ScheduleThreadPool
@@ -42,6 +43,72 @@ def thread_pool():
 @pytest.fixture
 def counter():
     return Count()
+
+
+@pytest.mark.freeze_time("2023-10-10 10:10:00")
+def test_month_enabled_job(scheduler: SafeScheduler):
+    def job():
+        pass
+
+    next_run = scheduler.every().date("09").at("12:34:56").do(job).next_run
+    assert (
+        next_run.year == 2023
+        and next_run.month == 11
+        and next_run.day == 9
+        and next_run.hour == 12
+        and next_run.minute == 34
+        and next_run.second == 56
+    )
+
+    next_run = scheduler.every().date("11").at("12:34:56").do(job).next_run
+    assert (
+        next_run.year == 2023
+        and next_run.month == 10
+        and next_run.day == 11
+        and next_run.hour == 12
+        and next_run.minute == 34
+        and next_run.second == 56
+    )
+
+    next_run = scheduler.every(3).date("09").at("12:34:56").do(job).next_run
+    assert (
+        next_run.year == 2024
+        and next_run.month == 1
+        and next_run.day == 9
+        and next_run.hour == 12
+        and next_run.minute == 34
+        and next_run.second == 56
+    )
+
+    next_run = scheduler.every(3).date("11").at("12:34:56").do(job).next_run
+    assert (
+        next_run.year == 2023
+        and next_run.month == 10
+        and next_run.day == 11
+        and next_run.hour == 12
+        and next_run.minute == 34
+        and next_run.second == 56
+    )
+
+    with pytest.raises(schedule.ScheduleValueError):
+        scheduler.every().date("09").seconds.do(job)
+        scheduler.every().date("09").minutes.do(job)
+        scheduler.every().date("09").hours.do(job)
+        scheduler.every().date("09").days.do(job)
+        scheduler.every().date("09").weeks.do(job)
+
+        scheduler.every().seconds.date("09").do(job)
+        scheduler.every().minutes.date("09").do(job)
+        scheduler.every().hours.date("09").do(job)
+        scheduler.every().days.date("09").do(job)
+        scheduler.every().weeks.date("09").do(job)
+
+        scheduler.every().date("9")
+        scheduler.every().date("00")
+        scheduler.every().date("32")
+
+    with pytest.raises(TypeError):
+        scheduler.every().date(9)  # type:ignore[arg-type]
 
 
 def test_safe_scheduler_schedule_job_succeed(scheduler, counter):

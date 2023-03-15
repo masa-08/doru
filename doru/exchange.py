@@ -1,6 +1,5 @@
 import datetime
 import logging
-import math
 import time
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
@@ -19,16 +18,13 @@ class Precision(TypedDict):
 
 class Market(TypedDict):
     symbol: str
-    type: str
-    active: bool
-    maker: float
-    taker: float
     precision: Precision
 
 
 class Ticker(TypedDict):
     symbol: str
-    bid: float
+    bid: Optional[float]
+    last: float
 
 
 class OrderStatus(Enum):
@@ -46,7 +42,7 @@ class Exchange:
         credential = self._read_credential(exchange)
         if not credential:
             logger.warning(f"Credential not found for {exchange}")
-        self.exchange = self._get_exchnage_instance(exchange, credential)
+        self.exchange = self._get_exchange_instance(exchange, credential)
 
     @staticmethod
     def _read_credential(exchange: str) -> Dict[str, str]:
@@ -55,20 +51,21 @@ class Exchange:
         return {"apiKey": credential.key, "secret": credential.secret} if credential is not None else {}
 
     @staticmethod
-    def _get_exchnage_instance(name: str, config: Dict[str, str]) -> ccxt.Exchange:
+    def _get_exchange_instance(name: str, config: Dict[str, str]) -> ccxt.Exchange:
         exchange_class = getattr(ccxt, name, None)
         if exchange_class is None or not issubclass(exchange_class, ccxt.Exchange):
             raise ValueError(f"{name} is not supported.")
         return exchange_class(config)
 
-    @staticmethod
-    def _calc_amount(amount: float, digit: Optional[Union[int, float]]) -> float:
-        # If no digits are specified, the calculation is performed with two significant digits.
-        if digit is None:
-            digit = abs(math.floor(math.log10(amount))) + 1
-        elif isinstance(digit, float):
-            digit = abs(math.floor(math.log10(digit)))
-        return round(amount, digit)
+    def _calc_amount(self, amount: float, precision: Optional[Union[int, float]]) -> float:
+        # If precision is None, the calculation is performed with two significant digits.
+        if precision is None:
+            precision = 2
+            counting_mode = ccxt.SIGNIFICANT_DIGITS
+        else:
+            counting_mode = self.exchange.precisionMode
+        decimal = ccxt.decimal_to_precision(amount, precision=precision, counting_mode=counting_mode)
+        return float(decimal)
 
     def _load_spot_markets(self) -> None:
         try:
@@ -78,21 +75,16 @@ class Exchange:
             raise
         markets_dict: Dict[str, Market] = {}
         for m in markets:
-            if m["type"] == "spot":
+            if m["type"] == "spot" and m["active"]:
                 markets_dict[m["symbol"]] = {
                     "symbol": m["symbol"],
-                    "type": m["type"],
-                    "active": m["active"],
-                    "maker": m["maker"],
-                    "taker": m["taker"],
-                    "precision": m["precision"],
+                    "precision": {"amount": m["precision"]["amount"]},
                 }
         self._markets = markets_dict
 
     def _fetch_ticker(self, symbol: str) -> Ticker:
         raw_ticker: Dict[str, Any] = self.exchange.fetch_ticker(symbol)
-        print(raw_ticker)
-        return {"symbol": raw_ticker["symbol"], "bid": raw_ticker["bid"]}
+        return {"symbol": raw_ticker["symbol"], "bid": raw_ticker["bid"], "last": raw_ticker["last"]}
 
     def fetch_spot_symbols(self) -> List[str]:
         try:
@@ -105,13 +97,12 @@ class Exchange:
     def create_order(self, symbol: str, quote_amount: float) -> str:
         try:
             ticker = self._fetch_ticker(symbol)
+            bid = ticker["bid"] or ticker["last"]  # because sometimes bid is None
             self._load_spot_markets()
             if self._markets is None:
                 raise Exception("Failed to load markets.")
-            amount = self._calc_amount(quote_amount / ticker["bid"], self._markets[symbol]["precision"]["amount"])
-            result = self.exchange.create_order(
-                symbol=symbol, type="limit", side="buy", amount=amount, price=ticker["bid"]
-            )
+            amount = self._calc_amount(quote_amount / bid, self._markets[symbol]["precision"]["amount"])
+            result = self.exchange.create_order(symbol=symbol, type="limit", side="buy", amount=amount, price=bid)
         except Exception as e:
             logger.error(f"Failed to create order: {e}")
             raise

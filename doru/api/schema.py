@@ -24,7 +24,7 @@ def is_valid_symbol(exchange: str, symbol: str):
 
 
 class TaskBase(BaseModel):
-    pair: str
+    symbol: str
     amount: float
     cycle: Cycle
     weekday: Optional[Weekday] = None
@@ -66,10 +66,10 @@ class TaskBase(BaseModel):
     def exchange_symbol_validator(cls, values):
         if "exchange" not in values:
             raise ValueError("`exchange` is required")
-        if "pair" not in values:
-            raise ValueError("`pair` is required")
+        if "symbol" not in values:
+            raise ValueError("`symbol` is required")
         is_valid_exchange_name(values["exchange"])
-        is_valid_symbol(values["exchange"], values["pair"])
+        is_valid_symbol(values["exchange"], values["symbol"])
         return values
 
 
