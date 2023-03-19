@@ -12,6 +12,9 @@ from doru.envs import DORU_TASK_FILE, DORU_TASK_LIMIT
 from doru.exceptions import (
     DoruError,
     MoreThanMaxRunningTasks,
+    OrderNotComplete,
+    OrderNotCreated,
+    OrderStatusUnknown,
     TaskDuplicate,
     TaskNotExist,
 )
@@ -22,15 +25,29 @@ from doru.scheduler import ScheduleThreadPool
 logger = getLogger(__name__)
 
 
-@retry(tries=5)
+@retry(tries=5, exceptions=(OrderNotCreated, OrderNotComplete))
 def do_order(*args, **kwargs) -> None:
     if not kwargs.keys() >= {"exchange_name", "symbol", "amount"}:
-        raise DoruError("Requied args are missing. required args: `exchange_name, symbol, amount`")
+        raise ValueError("Requied args are missing. required args: `exchange_name, symbol, amount`")
     exchange = get_exchange(kwargs["exchange_name"])
-    order_id = exchange.create_order(kwargs["symbol"], kwargs["amount"])
-    if exchange.wait_order_complete(order_id, kwargs["symbol"]) == OrderStatus.OPEN.value:
-        exchange.cancel_order(order_id, kwargs["symbol"])
-        raise DoruError(f"Failed to complete order: {{'order_id': {order_id}}}")
+
+    try:
+        order_id = exchange.create_order(kwargs["symbol"], kwargs["amount"])
+    except Exception as e:
+        raise OrderNotCreated(str(e))
+
+    order_status = exchange.wait_order_complete(order_id, kwargs["symbol"])
+    if order_status is None:
+        raise OrderStatusUnknown(order_id)
+    elif order_status in (OrderStatus.CANCELED.value, OrderStatus.EXPIRED.value, OrderStatus.REJECTED.value):
+        raise OrderNotComplete(order_id)
+    elif order_status == OrderStatus.OPEN.value:
+        try:
+            exchange.cancel_order(order_id, kwargs["symbol"])
+        except Exception:
+            raise DoruError(f"Failed to cancel order: {{'order_id': {order_id}}}")
+        else:
+            raise OrderNotComplete(order_id)
 
 
 class TaskManager:
