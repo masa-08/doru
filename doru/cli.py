@@ -11,7 +11,7 @@ from typing_extensions import get_args
 from doru.api.client import create_client
 from doru.api.daemonize import run
 from doru.api.schema import is_valid_exchange_name, is_valid_symbol
-from doru.types import Cycle, Weekday
+from doru.type import Cycle, Weekday
 
 ENABLE_CYCLES = get_args(Cycle)
 WEEKDAY = get_args(Weekday)

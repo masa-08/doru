@@ -3,7 +3,7 @@ from typing import List, Optional
 from doru.api.schema import Credential, KeepAlive, Task, TaskCreate
 from doru.api.session import create_session
 from doru.envs import DORU_SOCK_NAME
-from doru.types import Cycle, Weekday
+from doru.type import Cycle, Weekday
 
 
 class Client:

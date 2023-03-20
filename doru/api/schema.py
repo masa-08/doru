@@ -4,7 +4,7 @@ from typing import Optional
 import ccxt
 from pydantic import BaseModel, root_validator, validator
 
-from doru.types import Cycle, Status, Weekday
+from doru.type import Cycle, Status, Weekday
 
 TIMESTAMP_STRING_FORMAT = "%Y-%m-%d %H:%M"
 
