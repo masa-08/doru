@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 
@@ -383,8 +384,6 @@ def test_create_order_fail_with_exception(exchange: Exchange, mocker):
     ],
 )
 def test_wait_order_complete(exchange: Exchange, status, log, mocker, caplog):
-    import datetime
-
     mocker.patch("ccxt.Exchange.fetch_order", return_value={"status": status})
     caplog.set_level(logging.INFO)
 
@@ -392,6 +391,9 @@ def test_wait_order_complete(exchange: Exchange, status, log, mocker, caplog):
     assert result == status
     assert log in caplog.text
 
+
+def test_wait_order_complete_return_None_when_fetch_order_fail(exchange: Exchange, mocker, caplog):
     mocker.patch("ccxt.Exchange.fetch_order", side_effect=Exception)
-    with pytest.raises(Exception):
-        exchange.wait_order_complete("hogehoge", "BTC/USD", datetime.timedelta(seconds=3), tick=1)
+    result = exchange.wait_order_complete("hogehoge", "BTC/USD", datetime.timedelta(seconds=3), tick=1)
+    assert result is None
+    assert "The order status is unknown" in caplog.text

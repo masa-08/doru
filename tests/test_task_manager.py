@@ -4,8 +4,17 @@ from typing import Any, Dict
 import pytest
 
 from doru.api.schema import Task, TaskCreate
-from doru.exceptions import MoreThanMaxRunningTasks, TaskDuplicate, TaskNotExist
-from doru.manager.task_manager import TaskManager, create_task_manager
+from doru.exceptions import (
+    DoruError,
+    MoreThanMaxRunningTasks,
+    OrderNotComplete,
+    OrderNotCreated,
+    OrderStatusUnknown,
+    TaskDuplicate,
+    TaskNotExist,
+)
+from doru.exchange import OrderStatus
+from doru.manager.task_manager import TaskManager, create_task_manager, do_order
 
 TEST_DATA = {
     "1": {
@@ -483,3 +492,64 @@ def test_stop_task_with_exception_on_writing_raise_exception(task_manager: TaskM
     assert {k: v.dict(exclude_none=True) for (k, v) in task_manager.tasks.items()} == tasks
     with open(task_manager.file, "r") as f:
         assert json.load(f) == tasks
+
+
+@pytest.mark.parametrize(
+    "exchange_name,symbol,amount,order_status", [("binance", "BTC/USD", 100, OrderStatus.CLOSED.value)]
+)
+def test_do_order_return_none_when_order_complete(exchange_name, symbol, amount, order_status, mocker):
+    mocker.patch("doru.exchange.Exchange.create_order", return_value="test_id")
+    mocker.patch("doru.exchange.Exchange.wait_order_complete", return_value=order_status)
+    result = do_order(exchange_name=exchange_name, symbol=symbol, amount=amount)
+    assert result is None
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"symbol": "BTC/USD", "amount": 100},
+        {"exchange_name": "binance", "amount": 100},
+        {"exchange_name": "binance", "symbol": "BTC/USD"},
+    ],
+)
+def test_do_order_raise_value_error_when_required_params_missing(kwargs):
+    with pytest.raises(ValueError):
+        do_order(**kwargs)
+
+
+def test_do_order_raise_order_not_created_exception(mocker):
+    mocker.patch("doru.exchange.Exchange.create_order", side_effect=Exception)
+    with pytest.raises(OrderNotCreated):
+        do_order(exchange_name="binance", symbol="BTC/USD", amount=100)
+
+
+@pytest.mark.parametrize(
+    "order_status", [OrderStatus.CANCELED.value, OrderStatus.EXPIRED.value, OrderStatus.REJECTED.value]
+)
+def test_do_order_raise_order_not_complete_exception(order_status, mocker):
+    mocker.patch("doru.exchange.Exchange.create_order", return_value="test_id")
+    mocker.patch("doru.exchange.Exchange.wait_order_complete", return_value=order_status)
+    with pytest.raises(OrderNotComplete):
+        do_order(exchange_name="binance", symbol="BTC/USD", amount=100)
+
+
+@pytest.mark.parametrize("order_status", [None])
+def test_do_order_raise_order_status_unknown_exception(order_status, mocker):
+    mocker.patch("doru.exchange.Exchange.create_order", return_value="test_id")
+    mocker.patch("doru.exchange.Exchange.wait_order_complete", return_value=order_status)
+    with pytest.raises(OrderStatusUnknown):
+        do_order(exchange_name="binance", symbol="BTC/USD", amount=100)
+
+
+@pytest.mark.parametrize("order_status", [OrderStatus.OPEN.value])
+def test_do_order_exception_when_order_status_is_open(order_status, mocker):
+    mocker.patch("doru.exchange.Exchange.create_order", return_value="test_id")
+    mocker.patch("doru.exchange.Exchange.wait_order_complete", return_value=order_status)
+    mocker.patch("doru.exchange.Exchange.cancel_order", return_value=None)
+    with pytest.raises(OrderNotComplete):
+        do_order(exchange_name="binance", symbol="BTC/USD", amount=100)
+
+    # fail to cancel the order for any reason
+    mocker.patch("doru.exchange.Exchange.cancel_order", side_effect=Exception)
+    with pytest.raises(DoruError):
+        do_order(exchange_name="binance", symbol="BTC/USD", amount=100)

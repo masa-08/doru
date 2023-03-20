@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
 import ccxt
+from retry import retry
 from typing_extensions import TypedDict
 
 from doru.manager.credential_manager import create_credential_manager
@@ -108,20 +109,30 @@ class Exchange:
             raise
         return result["id"]
 
+    def fetch_order(self, order_id: str, symbol: str) -> Dict[str, Any]:
+        try:
+            result = self.exchange.fetch_order(order_id, symbol)
+        except Exception as e:
+            logger.error(f"Failed to fecth order: {e}")
+            raise
+        return result
+
     def wait_order_complete(
         self,
         order_id: str,
         symbol: str,
         wait_for: datetime.timedelta = datetime.timedelta(minutes=15),
         tick: float = 60,
-    ) -> str:
+    ) -> Optional[str]:
+        result: Optional[Dict[str, Any]] = None
         start = datetime.datetime.now()
         while True:
             try:
-                result = self.exchange.fetch_order(order_id, symbol)
-            except Exception as e:
-                logger.error(f"Failed to fecth order: {e}")
-                raise
+                result = self.fetch_order(order_id, symbol)
+            except Exception:
+                # Ignore errors because we want to continue processing even when order rtrieval may
+                # fail for unforeseen reasons
+                pass
             else:
                 if result["status"] == OrderStatus.CLOSED.value:
                     logger.info(f"Completed order: {result}")
@@ -138,10 +149,15 @@ class Exchange:
 
             if datetime.datetime.now() - start > wait_for:
                 break
+
+        if result is None:
+            logger.error("The order status is unknown")
+            return None
         if result["status"] == OrderStatus.OPEN.value:
             logger.error(f"The order was not completed: {result}")
         return result["status"]
 
+    @retry(tries=5, delay=2)
     def cancel_order(self, order_id: str, symbol: str) -> None:
         try:
             self.exchange.cancel_order(order_id, symbol)
