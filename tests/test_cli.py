@@ -2,7 +2,7 @@ from typing import List
 
 import pytest
 from click.testing import CliRunner
-from requests import HTTPError
+from requests import HTTPError, RequestException
 
 from doru.api.client import Client
 from doru.api.schema import Task
@@ -403,21 +403,50 @@ def test_remove_credential_with_invalid_param_fail(exchange):
     assert result.exit_code != 0
 
 
+def test_daemon_up_succeed(mocker):
+    mocker.patch("doru.api.client.Client.keepalive", side_effect=RequestException)
+    mocker.patch("asyncio.run", return_value=None)
+    result = CliRunner().invoke(cli, args=["daemon", "up"])
+    assert result.exit_code == 0
+
+
+def test_daemon_up_do_nothing_when_daemon_already_up(mocker):
+    mocker.patch("doru.api.client.Client.keepalive", return_value=None)
+    result = CliRunner().invoke(cli, args=["daemon", "up"])
+    assert result.exit_code == 0
+
+
+def test_daemon_up_fail_when_run_raise_timeout_error(mocker):
+    import asyncio
+
+    mocker.patch("doru.api.client.Client.keepalive", side_effect=RequestException)
+    mocker.patch("asyncio.run", side_effect=asyncio.TimeoutError)
+    result = CliRunner().invoke(cli, args=["daemon", "up"])
+    assert result.exit_code == 1
+
+
+def test_daemon_up_fail_when_run_raise_exception(mocker):
+    mocker.patch("doru.api.client.Client.keepalive", side_effect=RequestException)
+    mocker.patch("asyncio.run", side_effect=Exception)
+    result = CliRunner().invoke(cli, args=["daemon", "up"])
+    assert result.exit_code == 1
+
+
 def test_daemon_terminate_succeed(mocker):
     mocker.patch("doru.api.client.Client.terminate", return_value=None)
-    result = CliRunner().invoke(cli, args=["daemon", "terminate"])
+    result = CliRunner().invoke(cli, args=["daemon", "down"])
     assert result.exit_code == 0
 
 
 def test_daemon_terminate_fail_when_terminate_raise_http_error(mocker):
     mocker.patch("doru.api.client.Client.terminate", side_effect=HTTPError)
-    result = CliRunner().invoke(cli, args=["daemon", "terminate"])
+    result = CliRunner().invoke(cli, args=["daemon", "down"])
     assert result.exit_code != 0
 
 
 def test_daemon_terminate_fail_when_terminate_raise_exception(mocker):
     mocker.patch("doru.api.client.Client.terminate", side_effect=Exception)
-    result = CliRunner().invoke(cli, args=["daemon", "terminate"])
+    result = CliRunner().invoke(cli, args=["daemon", "down"])
     assert result.exit_code != 0
 
 
