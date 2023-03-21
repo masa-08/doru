@@ -1,13 +1,15 @@
+import asyncio
 import json
 from datetime import datetime
 from typing import List
 
 import click
-from requests import HTTPError
+from requests import HTTPError, RequestException
 from tabulate import tabulate
 from typing_extensions import get_args
 
 from doru.api.client import create_client
+from doru.api.daemonize import run
 from doru.api.schema import is_valid_exchange_name, is_valid_symbol
 from doru.types import Cycle, Weekday
 
@@ -350,6 +352,29 @@ def cred_remove(exchange):
 @cli.group(help="Terminate the background process for this application.")
 def daemon():
     pass
+
+
+def start_up_operation() -> None:
+    client = create_client()
+    try:
+        client.keepalive()
+    except RequestException:
+        click.echo("The background process of this application is starting up...")
+        try:
+            asyncio.run(run())
+        except asyncio.TimeoutError:
+            click.echo("The startup of the background process terminated due to timeout...")
+            exit(1)
+        except Exception:
+            click.echo("Something wrong with the startup of the background process...")
+            exit(1)
+
+        click.echo("The background process of this application has been successfully started!\n")
+
+
+@daemon.command(help="Start up the background process for this application.")
+def up():
+    start_up_operation()
 
 
 @daemon.command(name="terminate", help="Terminate the background process for this application.")
