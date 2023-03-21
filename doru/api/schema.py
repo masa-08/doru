@@ -15,10 +15,11 @@ def is_valid_exchange_name(exchange: str):
 
 
 def is_valid_symbol(exchange: str, symbol: str):
+    from doru.exchange import get_exchange
+
     is_valid_exchange_name(exchange)
-    ex: ccxt.Exchange = getattr(ccxt, exchange, None)()  # type:ignore[misc]
-    markets = ex.fetch_markets()
-    symbols = [m["symbol"] for m in markets if m["spot"]]  # return only spot type symbols
+    ex = get_exchange(exchange)
+    symbols = ex.fetch_spot_symbols()
     if symbol not in symbols:
         raise ValueError(f"`{symbol}` is not supported on {exchange}.\n\nSupported symbols:\n{set(symbols)}")
 

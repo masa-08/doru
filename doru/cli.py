@@ -277,6 +277,7 @@ def list():
             [(t.id, t.symbol, t.amount, t.cycle, t.next_run or "Not Scheduled", t.exchange, t.status) for t in tasks],
             headers=HEADER,
             tablefmt="simple",
+            numalign="right",
         )
     )
 
@@ -349,7 +350,7 @@ def cred_remove(exchange):
     click.echo("Successfully removed.")
 
 
-@cli.group(help="Terminate the background process for this application.")
+@cli.group(help="Start or terminate the background process for this application.")
 def daemon():
     pass
 
