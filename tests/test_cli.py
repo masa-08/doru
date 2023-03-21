@@ -434,19 +434,19 @@ def test_daemon_up_fail_when_run_raise_exception(mocker):
 
 def test_daemon_terminate_succeed(mocker):
     mocker.patch("doru.api.client.Client.terminate", return_value=None)
-    result = CliRunner().invoke(cli, args=["daemon", "terminate"])
+    result = CliRunner().invoke(cli, args=["daemon", "down"])
     assert result.exit_code == 0
 
 
 def test_daemon_terminate_fail_when_terminate_raise_http_error(mocker):
     mocker.patch("doru.api.client.Client.terminate", side_effect=HTTPError)
-    result = CliRunner().invoke(cli, args=["daemon", "terminate"])
+    result = CliRunner().invoke(cli, args=["daemon", "down"])
     assert result.exit_code != 0
 
 
 def test_daemon_terminate_fail_when_terminate_raise_exception(mocker):
     mocker.patch("doru.api.client.Client.terminate", side_effect=Exception)
-    result = CliRunner().invoke(cli, args=["daemon", "terminate"])
+    result = CliRunner().invoke(cli, args=["daemon", "down"])
     assert result.exit_code != 0
 
 

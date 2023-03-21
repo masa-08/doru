@@ -372,13 +372,7 @@ def start_up_operation() -> None:
         click.echo("The background process of this application has been successfully started!\n")
 
 
-@daemon.command(help="Start up the background process for this application.")
-def up():
-    start_up_operation()
-
-
-@daemon.command(name="terminate", help="Terminate the background process for this application.")
-def daemon_terminate():
+def terminate_operation() -> None:
     client = create_client()
     try:
         client.terminate()
@@ -387,3 +381,13 @@ def daemon_terminate():
     except Exception as e:
         raise click.ClickException(str(e))
     click.echo("The background process has been successfully terminated.")
+
+
+@daemon.command(help="Start up the background process for this application.")
+def up():
+    start_up_operation()
+
+
+@daemon.command(help="Terminate the background process for this application.")
+def down():
+    terminate_operation()
