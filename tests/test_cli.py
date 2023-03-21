@@ -458,4 +458,4 @@ def test_top_level_help():
     assert "stop    Stop tasks to accumulate crypto." in result.stdout
     assert "list    Display tasks to accumulate crypto." in result.stdout
     assert "cred    Add or remove credentials for the exchanges." in result.stdout
-    assert "daemon  Terminate the background process for this application." in result.stdout
+    assert "daemon  Start or terminate the background process for this application." in result.stdout
