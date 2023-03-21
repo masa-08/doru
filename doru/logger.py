@@ -2,6 +2,8 @@ import os
 from logging import config
 from pathlib import Path
 
+from doru.envs import DORU_LOG_FILE
+
 LOGGER_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -12,7 +14,7 @@ LOGGER_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "level": "INFO",
             "formatter": "default",
-            "filename": Path("~/.doru/log/doru.log").expanduser(),
+            "filename": Path(DORU_LOG_FILE).expanduser(),
             "mode": "a",
             "maxBytes": 1000000,  # 100KB
             "backupCount": 3,
