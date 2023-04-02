@@ -1,8 +1,11 @@
 [tool.poetry]
 name = "doru"
 version = "0.1.0"
-description = "Command line tool to accumulate crypto on centralized exchanges using dollar-cost averaging."
+description = "A tiny command line tool for regular investment of cryptocurrencies on centralized exchanges using dollar-cost averaging."
 authors = ["Masaharu Shimizu <masaharu.shimizu08@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/masa-08/doru"
 
 [tool.poetry.dependencies]
 python = "^3.7"
@@ -33,6 +36,9 @@ types-retry = "^0.9.9.2"
 pre-commit = "^2.21.0"
 tox = "^4.4.6"
 pytest-cov = "^4.0.0"
+
+[tool.poetry.scripts]
+doru = "doru:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
