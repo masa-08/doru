@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, Optional, Union
 from schedule import Job, ScheduleError, Scheduler, ScheduleValueError
 
 from doru.exceptions import DoruError
-from doru.types import Cycle, Weekday
+from doru.type import Cycle, Weekday
 
 logger = getLogger(__name__)
 
