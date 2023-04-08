@@ -1,5 +1,8 @@
 # Doru
 
+[![PyPI version](https://badge.fury.io/py/doru.svg)](https://badge.fury.io/py/doru)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/doru)
+[![License](https://img.shields.io/github/license/masa-08/doru)](https://github.com/twitter-dart/twitter-api-v2/blob/main/LICENSE)
 [![Build](https://github.com/masa-08/doru/actions/workflows/build.yml/badge.svg)](https://github.com/masa-08/doru/actions/workflows/build.yml)
 [![codecov](https://codecov.io/gh/masa-08/doru/branch/main/graph/badge.svg?token=261D9I3JLF)](https://codecov.io/gh/masa-08/doru)
 
